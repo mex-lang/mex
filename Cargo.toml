@@ -1,8 +1,24 @@
-[workspace]
-resolver = "2"
-members = ["mexc"]
-
-[workspace.package]
+[package]
+name = "mex-lang"
 version = "0.1.0"
 authors = ["Albert Ibragimov <ai@mex-lang.org>"]
 edition = "2021"
+description = "Mex, a language for describing software systems and data."
+documentation = "https://docs.rs/mex-lang"
+readme = "README.md"
+homepage = "https://mex-lang.org"
+repository = "https://github.com/mex-lang/mex"
+license = "MIT"
+keywords = ["mex", "language", "modeling"]
+categories = ["compilers"]
+
+[[bin]]
+name = "mexc"
+
+[build-dependencies]
+lalrpop = "0.22.0"
+
+[dependencies]
+lalrpop-util = { version = "0.22.0", features = ["lexer", "unicode"] }
+logos = { version = "0.15.0", features = ["forbid_unsafe"] }
+regex = { version = "1.11.1",features = ["unicode"] }

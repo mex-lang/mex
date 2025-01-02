@@ -1,0 +1,8 @@
+[workspace]
+resolver = "2"
+members = ["mexc"]
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Albert Ibragimov <ai@mex-lang.org>"]
+edition = "2021"

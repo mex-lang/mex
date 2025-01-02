@@ -1,0 +1,13 @@
+[package]
+name = "mexc"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[build-dependencies]
+lalrpop = "0.22.0"
+
+[dependencies]
+lalrpop-util = { version = "0.22.0", features = ["lexer", "unicode"] }
+logos = { version = "0.15.0", features = ["forbid_unsafe"] }
+regex = { version = "1.11.1",features = ["unicode"] }

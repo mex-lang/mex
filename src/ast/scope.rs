@@ -4,7 +4,7 @@ use lalrpop_util::ErrorRecovery;
 use crate::ast::Id;
 use crate::lexer::{LexicalError, Token};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Scope<'input> {
     Global(Vec<RefScope<'input>>),
     Package(Id<'input>, Vec<RefScope<'input>>),

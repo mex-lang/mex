@@ -1,24 +1,31 @@
+use std::borrow::Cow;
 use std::path::Path;
-use crate::ast::error::Error;
 
 pub enum Source {
     File(Box<Path>),
+    String(String),
 }
 
-impl<'input> Source {
+impl Source {
     pub fn from_file<P: AsRef<Path>>(path: P) -> Source {
         Source::File(path.as_ref().into())
     }
 
-    pub fn get_name(&self) -> &str {
+    pub fn from_str(text: &str) -> Source {
+        Source::String(String::from(text))
+    }
+
+    pub fn get_name(&self) -> Cow<str> {
         match self {
-            Source::File(path) => path.file_stem().unwrap().to_str().unwrap(),
+            Source::File(path) => Cow::Borrowed(path.file_stem().unwrap().to_str().unwrap()),
+            _ => Cow::Owned(String::default()),
         }
     }
 
-    pub fn read(&'input self) -> Result<String, Error<'input>> {
+    pub fn read(&self) -> crate::Result<Cow<str>> {
         match self {
-            Source::File(ref path) => Ok(std::fs::read_to_string(path)?)
+            Source::File(path) => Ok(Cow::Owned(std::fs::read_to_string(path)?)),
+            Source::String(s) => Ok(Cow::Borrowed(s)),
         }
     }
 }

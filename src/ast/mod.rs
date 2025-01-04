@@ -6,17 +6,23 @@ pub use source::*;
 pub use error::*;
 pub use scope::*;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Branch<'input> {
     Version(&'input str)
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Id<'input> {
     Name(&'input str),
     Index(i32),
     Anonymous,
     Branch(&'input str, Branch<'input>)
+}
+
+impl<'input> From<&'input str> for Id<'input> {
+    fn from(value: &'input str) -> Self {
+        Id::Name(value)
+    }
 }
 
 // #[derive(Debug)]

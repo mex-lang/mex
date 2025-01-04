@@ -1,10 +1,13 @@
+use std::cell::RefCell;
+use std::rc::Rc;
 use lalrpop_util::ErrorRecovery;
 use crate::ast::Id;
 use crate::lexer::{LexicalError, Token};
 
 #[derive(Debug)]
 pub enum Scope<'input> {
-    Package(Id<'input>, Vec<Box<Scope<'input>>>),
+    Global(Vec<RefScope<'input>>),
+    Package(Id<'input>, Vec<RefScope<'input>>),
     //Model(ModelDefinition),
     //Fragment(ModelDefinition),
 
@@ -14,15 +17,24 @@ pub enum Scope<'input> {
 }
 
 impl<'input> Scope<'input> {
-    pub fn new_package(name: &'input str) -> Box<Self> {
-        Box::new(Scope::Package(Id::Name(name), vec![]))
+    pub fn new_package(name: &'input str) -> RefScope<'input> {
+        Scope::Package(Id::Name(name), vec![]).into()
     }
 
-    pub fn add_into_root(mut root: Box<Self>, item: Box<Self>) -> Box<Self> {
-        match *root {
-            Scope::Package(_, ref mut children) => children.push(item),
+    pub fn add_space(root: RefScope<'input>, item: RefScope<'input>) -> RefScope<'input> {
+        match **root.borrow_mut() {
+            Scope::Package(_, ref mut children) => children.push(item.clone()),
+            Scope::Global(ref mut children) => children.push(item.clone()),
             _ => {}
         };
-        root
+        item
+    }
+}
+
+pub type RefScope<'input> = Rc<RefCell<Box<Scope<'input>>>>;
+
+impl<'input> Into<RefScope<'input>> for Scope<'input> {
+    fn into(self) -> RefScope<'input> {
+        Rc::new(RefCell::new(Box::new(self)))
     }
 }

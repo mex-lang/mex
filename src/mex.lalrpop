@@ -1,23 +1,29 @@
 use crate::lexer::{Token, LexicalError};
 use crate::ast;
 
-grammar<'input>(source: &'input ast::Source);
+grammar<'input>(source: &'input ast::Source, global: &'input ast::RefScope<'input>);
 
-pub Package: Box<ast::Scope<'input>> = {
-    <p: PackageRoot> => p,
-    <p: PackageNessted> => {
-        let r = ast::Scope::new_package(source.get_name());
-        ast::Scope::add_into_root(r, p)
+pub Package: ast::RefScope<'input> = {
+    <p: PackageRoot> => {
+        ast::Scope::add_space(global.clone(), p)
     },
-    <r: Package> <p: PackageNessted> => ast::Scope::add_into_root(r, p),
-    ! => Box::new(ast::Scope::Error(<>))
+    <p: PackageNessted> => {
+        //let r = ast::Scope::new_package(source.get_name());
+        ast::Scope::add_space(global.clone(), p);
+        global.clone()
+    },
+    <root: Package> <p: PackageNessted> => {
+        ast::Scope::add_space(root.clone(), p);
+        root
+    },
+    ! => ast::Scope::Error(<>).into()
 }
 
-pub PackageNessted: Box<ast::Scope<'input>> = {
+pub PackageNessted: ast::RefScope<'input> = {
      "package" <name: Name> "{" "}" => ast::Scope::new_package(name)
 }
 
-pub PackageRoot: Box<ast::Scope<'input>> = {
+pub PackageRoot: ast::RefScope<'input> = {
      "package" <name: Name> ";" => ast::Scope::new_package(name)
 }
 

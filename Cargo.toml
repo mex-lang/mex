@@ -12,6 +12,8 @@ license = "MIT"
 keywords = ["mex", "language", "modeling"]
 categories = ["compilers"]
 
+build = "build.rs"
+
 [[bin]]
 name = "mexc"
 

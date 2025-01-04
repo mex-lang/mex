@@ -1,0 +1,69 @@
+use crate::lexer::{Token, LexicalError};
+use crate::ast;
+
+grammar<'input>(source: &'input ast::Source);
+
+pub Package: Box<ast::Scope<'input>> = {
+    <p: PackageRoot> => p,
+    <p: PackageNessted> => {
+        let r = ast::Scope::new_package(source.get_name());
+        ast::Scope::add_into_root(r, p)
+    },
+    <r: Package> <p: PackageNessted> => ast::Scope::add_into_root(r, p),
+    ! => Box::new(ast::Scope::Error(<>))
+}
+
+pub PackageNessted: Box<ast::Scope<'input>> = {
+     "package" <name: Name> "{" "}" => ast::Scope::new_package(name)
+}
+
+pub PackageRoot: Box<ast::Scope<'input>> = {
+     "package" <name: Name> ";" => ast::Scope::new_package(name)
+}
+
+pub Name: &'input str = {
+    <name: "id"> => name
+}
+
+extern {
+  type Location = usize;
+  type Error = LexicalError;
+
+  enum Token<'input> {
+    "package" => Token::KeywordPackage,
+    "model" => Token::KeywordModel,
+    "enum" => Token::KeywordEnum,
+    "fragment" => Token::KeywordFragment,
+    "scalar" => Token::KeywordScalar,
+
+    "id" => Token::Identifier(<&'input str>),
+    "int" => Token::Integer(<i64>),
+
+    "(" => Token::LParen,
+    ")" => Token::RParen,
+    "{" => Token::LBracket,
+    "}" => Token::RBracket,
+    "<" => Token::Lees,
+    ">" => Token::Greater,
+
+    "?" => Token::Question,
+    "=" => Token::Assign,
+    ";" => Token::Semicolon,
+    ":" => Token::Colon,
+    "..." => Token::Spread,
+
+    "error" => Token::Error(<LexicalError>),
+  }
+}
+
+// use lalrpop_util::{ErrorRecovery, ParseError};
+//    <err: "error"> => {
+//        let error = ErrorRecovery {
+//            error: ParseError::User {
+//                error: LexicalError::InvalidToken,
+//            },
+//            dropped_tokens: Vec::new(), // or specify the dropped tokens
+//        };
+//        errors.push(error);
+//        Box::new(ast::Scope::Error)
+//    },

@@ -6,6 +6,7 @@ use crate::mex::PackageParser;
 
 pub mod ast;
 pub mod lexer;
+pub mod transform;
 
 lalrpop_mod!(pub mex);
 

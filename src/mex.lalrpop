@@ -16,15 +16,32 @@ pub Package: ast::RefScope<'input> = {
         ast::Scope::add_space(root.clone(), p);
         root
     },
-    ! => ast::Scope::Error(<>).into()
+    //! => ast::Scope::Error(<>).into()
+}
+
+pub PackageItems: Vec<ast::RefScope<'input>> = {
+    <p: PackageNessted> => {
+        vec![p]
+    },
+    <mut items: PackageItems> <p: PackageNessted> => {
+        items.push(p);
+        items
+    }
 }
 
 pub PackageNessted: ast::RefScope<'input> = {
-     "package" <name: Name> "{" "}" => ast::Scope::new_package(name)
+     "package" <name: Name> "{" "}" => ast::Scope::new_package(name, vec![]),
+     "package" <name: Name> "{" <items: PackageItems> "}" => ast::Scope::new_package(name, items),
+     <m: Model> => m,
+     ! => ast::Scope::Error(<>).into()
 }
 
 pub PackageRoot: ast::RefScope<'input> = {
-     "package" <name: Name> ";" => ast::Scope::new_package(name)
+     "package" <name: Name> ";" => ast::Scope::new_package(name, vec![])
+}
+
+pub Model: ast::RefScope<'input> = {
+    "model" <name: Name> "{" "}" => ast::Scope::new_model(name)
 }
 
 pub Name: &'input str = {

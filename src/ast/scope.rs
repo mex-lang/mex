@@ -8,17 +8,20 @@ use crate::lexer::{LexicalError, Token};
 pub enum Scope<'input> {
     Global(Vec<RefScope<'input>>),
     Package(Id<'input>, Vec<RefScope<'input>>),
+    Model(Id<'input>),
     //Model(ModelDefinition),
     //Fragment(ModelDefinition),
 
     Error(ErrorRecovery<usize, Token<'input>, LexicalError>),
-
-    Nop
 }
 
 impl<'input> Scope<'input> {
-    pub fn new_package(name: &'input str) -> RefScope<'input> {
-        Scope::Package(Id::Name(name), vec![]).into()
+    pub fn new_package(name: &'input str, items: Vec<RefScope<'input>>) -> RefScope<'input> {
+        Scope::Package(Id::Name(name), items).into()
+    }
+
+    pub fn new_model(name: &'input str) -> RefScope<'input> {
+        Scope::Model(Id::Name(name)).into()
     }
 
     pub fn add_space(root: RefScope<'input>, item: RefScope<'input>) -> RefScope<'input> {

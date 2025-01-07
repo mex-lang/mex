@@ -9,6 +9,7 @@ pub enum Scope<'input> {
     Global(Vec<RefScope<'input>>),
     Package(Id<'input>, Vec<RefScope<'input>>),
     Model(Id<'input>),
+    Scalar(Id<'input>),
     //Model(ModelDefinition),
     //Fragment(ModelDefinition),
 
@@ -22,6 +23,10 @@ impl<'input> Scope<'input> {
 
     pub fn new_model(name: &'input str) -> RefScope<'input> {
         Scope::Model(Id::Name(name)).into()
+    }
+
+    pub fn new_scalar(name: &'input str) -> RefScope<'input> {
+        Scope::Scalar(Id::Name(name)).into()
     }
 
     pub fn add_space(root: RefScope<'input>, item: RefScope<'input>) -> RefScope<'input> {

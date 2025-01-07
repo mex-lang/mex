@@ -33,6 +33,7 @@ pub PackageNessted: ast::RefScope<'input> = {
      "package" <name: Name> "{" "}" => ast::Scope::new_package(name, vec![]),
      "package" <name: Name> "{" <items: PackageItems> "}" => ast::Scope::new_package(name, items),
      <m: Model> => m,
+     <s: Scalar> => s,
      ! => ast::Scope::Error(<>).into()
 }
 
@@ -42,6 +43,10 @@ pub PackageRoot: ast::RefScope<'input> = {
 
 pub Model: ast::RefScope<'input> = {
     "model" <name: Name> "{" "}" => ast::Scope::new_model(name)
+}
+
+pub Scalar: ast::RefScope<'input> = {
+    "scalar" <name: Name> ";" => ast::Scope::new_scalar(name)
 }
 
 pub Name: &'input str = {

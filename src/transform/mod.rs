@@ -12,11 +12,12 @@ pub trait Transformer<'a> {
     fn visit_global(&'a self, items: &'a Vec<RefScope>, level: isize);
     fn visit_package(&'a self, id: &'a Id, items: &'a Vec<RefScope>, level: isize);
     fn visit_model(&'a self, id: &'a Id, level: isize);
+    fn visit_scalar(&'a self, id: &'a Id, level: isize);
     fn visit_error(&'a self, error: &ErrorRecovery<usize, Token, LexicalError>, level: isize);
 }
 
 pub struct ConsoleRenderer {
-    indent_count: isize,
+    indent_count: isize
 }
 
 impl ConsoleRenderer {
@@ -32,10 +33,9 @@ impl ConsoleRenderer {
 impl<'a> Transformer<'a> for ConsoleRenderer {
 
     fn render_text(&self, text: Cow<'_, str>, level: isize) {
-        for _ in 0..level * self.indent_count {
-            print!(" ");
-        }
-        println!("{:}", text);
+        let n = level * self.indent_count;
+        let indent = " ".repeat(n.try_into().unwrap_or_default());
+        println!("{}{:}", indent, text);
     }
 
     fn render_line(&'a self) {
@@ -63,6 +63,9 @@ impl<'a> Transformer<'a> for ConsoleRenderer {
             }
             Scope::Model(ref id) => {
                 self.visit_model(id, level);
+            }
+            Scope::Scalar(ref id) => {
+                self.visit_scalar(id, level);
             }
             Scope::Error(ref error) => {
                 self.visit_error(error, level);
@@ -101,6 +104,11 @@ impl<'a> Transformer<'a> for ConsoleRenderer {
         self.render_line();
         self.render_text(format!("model {:} {{", self.visit_id(id)).into(), level);
         self.render_text(format!("}}").into(), level);
+    }
+
+    fn visit_scalar(&self, id: &Id, level: isize) {
+        self.render_line();
+        self.render_text(format!("scalar {:};", self.visit_id(id)).into(), level);
     }
 
     fn visit_error(&self, error: &ErrorRecovery<usize, Token, LexicalError>, level: isize) {

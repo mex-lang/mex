@@ -39,6 +39,12 @@ pub enum ItemType<'a> {
     //Generic(Box<Scope::Model>, Box<ModelParamDefinition::Generic>)
 }
 
+impl<'a> ItemType<'a> {
+    pub fn from_name(name: &'a str) -> Self {
+        ItemType::Model(name.into())
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum ModelItemDefinition<'a> {
     Item(Id<'a>, ItemType<'a>),
@@ -62,7 +68,23 @@ pub enum TupleItemDefinition<'a> {
 
 #[derive(Debug, PartialEq)]
 pub enum EnumItemDefinition<'a> {
-    Item(ItemType<'a>)
+    Item(Id<'a>),
+    Record(Id<'a>, ItemType<'a>),
+    Tuple(Id<'a>, ItemType<'a>),
+}
+
+impl<'a> EnumItemDefinition<'a> {
+    pub fn new_item(id: &'a str) -> Self {
+        Self::Item(id.into())
+    }
+
+    pub fn new_record(id: &'a str, item_type: ItemType<'a>) -> Self {
+        Self::Record(id.into(), item_type)
+    }
+
+    pub fn new_tuple(id: &'a str, item_type: ItemType<'a>) -> Self {
+        Self::Tuple(id.into(), item_type)
+    }
 }
 
 // #[derive(Debug)]
@@ -95,6 +117,10 @@ pub enum ModelDefinition<'a> {
 impl<'a> ModelDefinition<'a> {
     pub fn new_record(id: Id<'a>, items: Vec<ModelItemDefinition<'a>>) -> Self {
         Self::Record(id, items, vec![])
+    }
+
+    pub fn new_enum(id: Id<'a>, items: Vec<EnumItemDefinition<'a>>) -> Self {
+        Self::Enum(id, items, vec![])
     }
 
     pub fn new_fragment(id: Id<'a>, items: Vec<ModelItemDefinition<'a>>) -> Self {

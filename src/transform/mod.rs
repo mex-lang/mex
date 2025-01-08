@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use lalrpop_util::ErrorRecovery;
-use crate::ast::{ModelItemDefinition, Id, ItemType, ModelDefinition, RefScope, Scope};
+use crate::ast::{ModelItemDefinition, EnumItemDefinition, Id, ItemType, ModelDefinition, RefScope, Scope};
 use crate::lexer::{LexicalError, Token};
 
 pub trait Target {
@@ -154,7 +154,26 @@ impl<'a, R: Target> Transformer<'a> for MexFileTransformer<'a, R> {
 
                 self.render_text(format!("}}").into(), level);
             }
-            ModelDefinition::Enum(ref _id, ref _fields, ref _params) => {
+            ModelDefinition::Enum(ref id, ref items, ref _params) => {
+                self.render_line();
+                self.render_text(format!("enum {:} {{", self.visit_id(id)).into(), level);
+
+                for item in items {
+
+                    match item {
+                        EnumItemDefinition::Item(ref id) => {
+                            self.render_text(format!("{:},", self.visit_id(id)), level + 1);
+                        },
+                        EnumItemDefinition::Record(ref id, ref type_id) => {
+                            self.render_text(format!("{:}({{{:}}}),", self.visit_id(id), self.visit_item_type(type_id)), level + 1);
+                        },
+                        EnumItemDefinition::Tuple(ref id, ref type_id) => {
+                            self.render_text(format!("{:}({:}),", self.visit_id(id), self.visit_item_type(type_id)), level + 1);
+                        }
+                    }
+                }
+
+                self.render_text(format!("}}").into(), level);
             },
             ModelDefinition::Tuple(ref _id, ref _fields, ref _params) => {
             }

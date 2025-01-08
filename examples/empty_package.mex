@@ -11,6 +11,13 @@ model Name {
     ... AuditTrail
 }
 
+enum CommonStatus {
+    Draft,
+    Published(DateTime),
+    Archived(DateTime),
+    Test({ Test })
+}
+
 package Test {
     model Name {}
 }

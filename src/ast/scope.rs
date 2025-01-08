@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use lalrpop_util::ErrorRecovery;
-use crate::ast::{ModelItemDefinition, Id, ModelDefinition};
+use crate::ast::{ModelItemDefinition, Id, ModelDefinition, EnumItemDefinition};
 use crate::lexer::{LexicalError, Token};
 
 #[derive(Debug, PartialEq)]
@@ -19,6 +19,11 @@ impl<'input> Scope<'input> {
 
     pub fn new_model(name: &'input str, items: Vec<ModelItemDefinition<'input>>) -> RefScope<'input> {
         let def = ModelDefinition::new_record(name.into(), items);
+        Scope::Model(def).into()
+    }
+
+    pub fn new_enum(name: &'input str, items: Vec<EnumItemDefinition<'input>>) -> RefScope<'input> {
+        let def = ModelDefinition::new_enum(name.into(), items);
         Scope::Model(def).into()
     }
 

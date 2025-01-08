@@ -31,6 +31,7 @@ pub PackageNessted: ast::RefScope<'input> = {
      "package" <name: Name> "{" "}" => ast::Scope::new_package(name, vec![]),
      "package" <name: Name> "{" <items: PackageItems> "}" => ast::Scope::new_package(name, items),
      <m: Model> => m,
+     <i: Enum> => i,
      <f: Fragment> => f,
      <s: Scalar> => s,
      ! => ast::Scope::Error(<>).into()
@@ -54,10 +55,8 @@ pub ModelItems: Vec<ast::ModelItemDefinition<'input>> = {
 }
 
 pub ModelNested: ast::ModelItemDefinition<'input> = {
-    <f: ModelField> => f,
-    <f: ModelField> "," => f,
-    <s: ModelSpred> => s,
-    <s: ModelSpred> "," => s,
+    <f: ModelField> ","? => f,
+    <s: ModelSpred> ","? => s,
 }
 
 pub ModelField: ast::ModelItemDefinition<'input> = {
@@ -77,12 +76,46 @@ pub Fragment: ast::RefScope<'input> = {
     "fragment" <name: Name> "{" <items: ModelItems> "}" => ast::Scope::new_fragment(name, items),
 }
 
+pub Enum: ast::RefScope<'input> = {
+    "enum" <name: Name> "{" <items: EnunItems> "}" => ast::Scope::new_enum(name, items)
+}
+
+pub EnunItems: Vec<ast::EnumItemDefinition<'input>> = {
+    <i: EnumNested> => vec![i],
+    <mut items: EnunItems> <i: EnumNested> => {
+        items.push(i);
+        items
+    }
+}
+
+pub EnumNested: ast::EnumItemDefinition<'input> = {
+    <i: EnunItem> ","? => i,
+    <i: EnumTuple> ","? => i,
+    <i: EnumRecord> ","? => i,
+}
+
+pub EnunItem: ast::EnumItemDefinition<'input> = {
+    <name: Name> => ast::EnumItemDefinition::new_item(name)
+}
+
+pub EnumRecord: ast::EnumItemDefinition<'input> = {
+    <name: Name> "(" "{" <t: ItemType> "}" ")" => ast::EnumItemDefinition::new_record(name, t)
+}
+
+pub EnumTuple: ast::EnumItemDefinition<'input> = {
+    <name: Name> "(" <t: ItemType> ")" => ast::EnumItemDefinition::new_tuple(name, t)
+}
+
 pub Scalar: ast::RefScope<'input> = {
     "scalar" <name: Name> ";" => ast::Scope::new_scalar(name)
 }
 
 pub Name: &'input str = {
     <name: "id"> => name
+}
+
+pub ItemType: ast::ItemType<'input> = {
+    <name: "id"> => ast::ItemType::from_name(name)
 }
 
 extern {

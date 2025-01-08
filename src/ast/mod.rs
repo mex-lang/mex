@@ -63,7 +63,18 @@ impl<'a> ModelItemDefinition<'a> {
 
 #[derive(Debug, PartialEq)]
 pub enum TupleItemDefinition<'a> {
-    Item(Id<'a>, ItemType<'a>),
+    Item(ItemType<'a>),
+    NamedItem(Id<'a>, ItemType<'a>),
+}
+
+impl<'a> TupleItemDefinition<'a> {
+    pub fn new_item(type_id: &'a str) -> Self {
+        Self::Item(ItemType::Model(type_id.into()))
+    }
+
+    pub fn new_named_item(id: &'a str, type_id: &'a str) -> Self {
+        Self::NamedItem(id.into(), ItemType::Model(type_id.into()))
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -117,6 +128,10 @@ pub enum ModelDefinition<'a> {
 impl<'a> ModelDefinition<'a> {
     pub fn new_record(id: Id<'a>, items: Vec<ModelItemDefinition<'a>>) -> Self {
         Self::Record(id, items, vec![])
+    }
+
+    pub fn new_tuple(id: Id<'a>, items: Vec<TupleItemDefinition<'a>>) -> Self {
+        Self::Tuple(id, items, vec![])
     }
 
     pub fn new_enum(id: Id<'a>, items: Vec<EnumItemDefinition<'a>>) -> Self {

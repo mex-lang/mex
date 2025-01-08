@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use lalrpop_util::ErrorRecovery;
-use crate::ast::{ModelItemDefinition, EnumItemDefinition, Id, ItemType, ModelDefinition, RefScope, Scope};
+use crate::ast::{ModelItemDefinition, EnumItemDefinition, Id, ItemType, ModelDefinition, RefScope, Scope, TupleItemDefinition};
 use crate::lexer::{LexicalError, Token};
 
 pub trait Target {
@@ -175,7 +175,15 @@ impl<'a, R: Target> Transformer<'a> for MexFileTransformer<'a, R> {
 
                 self.render_text(format!("}}").into(), level);
             },
-            ModelDefinition::Tuple(ref _id, ref _fields, ref _params) => {
+            ModelDefinition::Tuple(ref id, ref items, ref _params) => {
+                self.render_line();
+
+                let items = items.iter().map(|item| match item {
+                    TupleItemDefinition::Item(ref type_id) => self.visit_item_type(type_id).into_owned(),
+                    TupleItemDefinition::NamedItem(ref id, ref type_id) => format!("{:}: {:}", self.visit_id(id), self.visit_item_type(type_id)),
+                }).collect::<Vec<_>>().join(", ");
+
+                self.render_text(format!("model {:}({:})", self.visit_id(id), items), level);
             }
         }
     }

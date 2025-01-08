@@ -42,8 +42,26 @@ pub PackageRoot: ast::RefScope<'input> = {
 }
 
 pub Model: ast::RefScope<'input> = {
-    "model" <name: Name> "{" "}" => ast::Scope::new_model(name, vec![]),
-    "model" <name: Name> "{" <items: ModelItems> "}" => ast::Scope::new_model(name, items),
+    "model" <name: Name> "{" "}" => ast::Scope::new_record(name, vec![]),
+    "model" <name: Name> "{" <items: ModelItems> "}" => ast::Scope::new_record(name, items),
+    "model" <name: Name> "(" <items: TupleItems> ")" => ast::Scope::new_tuple(name, items),
+}
+
+pub TupleItems: Vec<ast::TupleItemDefinition<'input>> = {
+    <i: TupleItem> => vec![i],
+    <mut items: TupleItems>"," <i: TupleItem> => {
+        items.push(i);
+        items
+    }
+}
+
+pub TupleItem: ast::TupleItemDefinition<'input> = {
+    <t: Name> => {
+        ast::TupleItemDefinition::new_item(t)
+    },
+    <n: Name> ":" <t: Name> => {
+        ast::TupleItemDefinition::new_named_item(n, t)
+    }
 }
 
 pub ModelItems: Vec<ast::ModelItemDefinition<'input>> = {

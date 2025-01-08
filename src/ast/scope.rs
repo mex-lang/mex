@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use lalrpop_util::ErrorRecovery;
-use crate::ast::{ModelItemDefinition, Id, ModelDefinition, EnumItemDefinition};
+use crate::ast::{ModelItemDefinition, Id, ModelDefinition, EnumItemDefinition, TupleItemDefinition};
 use crate::lexer::{LexicalError, Token};
 
 #[derive(Debug, PartialEq)]
@@ -17,8 +17,13 @@ impl<'input> Scope<'input> {
         Scope::Package(Id::Name(name), items).into()
     }
 
-    pub fn new_model(name: &'input str, items: Vec<ModelItemDefinition<'input>>) -> RefScope<'input> {
+    pub fn new_record(name: &'input str, items: Vec<ModelItemDefinition<'input>>) -> RefScope<'input> {
         let def = ModelDefinition::new_record(name.into(), items);
+        Scope::Model(def).into()
+    }
+
+    pub fn new_tuple(name: &'input str, items: Vec<TupleItemDefinition<'input>>) -> RefScope<'input> {
+        let def = ModelDefinition::new_tuple(name.into(), items);
         Scope::Model(def).into()
     }
 

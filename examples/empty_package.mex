@@ -1,5 +1,8 @@
 package Common;
 
+model Point(Int, Int)
+model Point(x: Int, y: Int)
+
 fragment AuditTrail {
     created: User,
     updated: User

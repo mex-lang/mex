@@ -31,6 +31,7 @@ pub PackageNessted: ast::RefScope<'input> = {
      "package" <name: Name> "{" "}" => ast::Scope::new_package(name, vec![]),
      "package" <name: Name> "{" <items: PackageItems> "}" => ast::Scope::new_package(name, items),
      <m: Model> => m,
+     <f: Fragment> => f,
      <s: Scalar> => s,
      ! => ast::Scope::Error(<>).into()
 }
@@ -69,6 +70,11 @@ pub ModelSpred: ast::ModelItemDefinition<'input> = {
     "..." <t: Name> => {
         ast::ModelItemDefinition::new_spread(t)
     }
+}
+
+pub Fragment: ast::RefScope<'input> = {
+    "fragment" <name: Name> "{" "}" => ast::Scope::new_fragment(name, vec![]),
+    "fragment" <name: Name> "{" <items: ModelItems> "}" => ast::Scope::new_fragment(name, items),
 }
 
 pub Scalar: ast::RefScope<'input> = {

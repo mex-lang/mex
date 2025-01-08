@@ -135,6 +135,16 @@ impl<'a> Transformer<'a> for ConsoleRenderer {
 
                 self.render_text(format!("}}").into(), level);
             },
+            ModelDefinition::Fragment(ref id, ref items, ref params) => {
+                self.render_line();
+                self.render_text(format!("fragment {:} {{", self.visit_id(id)).into(), level);
+
+                for item in items {
+                    self.visit_model_item_def(item, level + 1);
+                }
+
+                self.render_text(format!("}}").into(), level);
+            }
             ModelDefinition::Enum(ref id, ref fields, ref params) => {
             },
             ModelDefinition::Tuple(ref id, ref fields, ref params) => {

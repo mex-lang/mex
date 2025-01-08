@@ -1,11 +1,14 @@
 package Common;
 
-model Name {
+fragment AuditTrail {
+    created: User,
+    updated: User
+}
 
+model Name {
     f1: Test,
     f2: Test,
-    ... Name
-
+    ... AuditTrail
 }
 
 package Test {

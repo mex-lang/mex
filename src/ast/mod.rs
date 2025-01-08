@@ -88,12 +88,17 @@ pub enum ModelDefinition<'a> {
     Record(Id<'a>, Vec<ModelItemDefinition<'a>>, Vec<ModelParamDefinition>),
     Tuple(Id<'a>, Vec<TupleItemDefinition<'a>>, Vec<ModelParamDefinition>),
     Enum(Id<'a>, Vec<EnumItemDefinition<'a>>, Vec<ModelParamDefinition>),
+    Fragment(Id<'a>, Vec<ModelItemDefinition<'a>>, Vec<EnumItemDefinition<'a>>),
     Scalar(Id<'a>)
 }
 
 impl<'a> ModelDefinition<'a> {
     pub fn new_record(id: Id<'a>, items: Vec<ModelItemDefinition<'a>>) -> Self {
         Self::Record(id, items, vec![])
+    }
+
+    pub fn new_fragment(id: Id<'a>, items: Vec<ModelItemDefinition<'a>>) -> Self {
+        Self::Fragment(id, items, vec![])
     }
 
     pub fn new_scalar(id: Id<'a>) -> Self {

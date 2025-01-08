@@ -9,8 +9,6 @@ pub enum Scope<'input> {
     Global(Vec<RefScope<'input>>),
     Package(Id<'input>, Vec<RefScope<'input>>),
     Model(ModelDefinition<'input>),
-    //Fragment(ModelDefinition),
-
     Error(ErrorRecovery<usize, Token<'input>, LexicalError>),
 }
 
@@ -21,6 +19,11 @@ impl<'input> Scope<'input> {
 
     pub fn new_model(name: &'input str, items: Vec<ModelItemDefinition<'input>>) -> RefScope<'input> {
         let def = ModelDefinition::new_record(name.into(), items);
+        Scope::Model(def).into()
+    }
+
+    pub fn new_fragment(name: &'input str, items: Vec<ModelItemDefinition<'input>>) -> RefScope<'input> {
+        let def = ModelDefinition::new_fragment(name.into(), items);
         Scope::Model(def).into()
     }
 

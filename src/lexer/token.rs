@@ -43,6 +43,8 @@ pub enum Token<'input> {
     Semicolon,
     #[token(":")]
     Colon,
+    #[token(",")]
+    Comma,
     #[token("...")]
     Spread,
 

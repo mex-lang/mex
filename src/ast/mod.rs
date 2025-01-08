@@ -32,38 +32,49 @@ impl<'input> From<&'input str> for Id<'input> {
 //     Integer(i64),
 // }
 
-// #[derive(Debug)]
-// pub enum Ref {
-//     Model(Box<Scope::Model>, Vec<ModelParam>),
-//     Generic(Box<Scope::Model>, Box<ModelParamDefinition::Generic>)
-// }
+#[derive(Debug, PartialEq)]
+pub enum ItemType<'a> {
+    Model(Id<'a>),
+    //Model(Box<Scope::Model>, Vec<ModelParam>),
+    //Generic(Box<Scope::Model>, Box<ModelParamDefinition::Generic>)
+}
 
-// #[derive(Debug)]
-// pub enum DicItemDefinition {
-//     Item(Name, Ref::Model),
-//     Spread(Ref::Model)
-// }
+#[derive(Debug, PartialEq)]
+pub enum ModelItemDefinition<'a> {
+    Item(Id<'a>, ItemType<'a>),
+    Spread(ItemType<'a>)
+}
 
-// #[derive(Debug)]
-// pub enum TupleItemDefinition {
-//     Item(Name, Ref::Model),
-// }
+impl<'a> ModelItemDefinition<'a> {
+    pub fn new_item(id: &'a str, type_id: &'a str) -> Self {
+        Self::Item(id.into(), ItemType::Model(type_id.into()))
+    }
 
-// #[derive(Debug)]
-// pub enum EnumItemDefinition {
-//     Item(Ref::Model)
-// }
+    pub fn new_spread(type_id: &'a str) -> Self {
+        Self::Spread(ItemType::Model(type_id.into()))
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum TupleItemDefinition<'a> {
+    Item(Id<'a>, ItemType<'a>),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum EnumItemDefinition<'a> {
+    Item(ItemType<'a>)
+}
 
 // #[derive(Debug)]
 // pub enum GenericConstraintDefinition {
 //     Model(Box<Scope::Model>),
 // }
 
-// #[derive(Debug)]
-// pub enum ModelParamDefinition {
-//     Generic(Name::Common, Vec<GenericConstraintDefinition>),
-//     Meta(Name::Common, Box<Scope::Model>, Option<Literal>)
-// }
+#[derive(Debug, PartialEq)]
+pub enum ModelParamDefinition {
+    //Generic(Name::Common, Vec<GenericConstraintDefinition>),
+    //Meta(Name::Common, Box<Scope::Model>, Option<Literal>)
+}
 
 // #[derive(Debug)]
 // pub enum ModelParam {
@@ -72,11 +83,21 @@ impl<'input> From<&'input str> for Id<'input> {
 //     Meta(Box<ModelParamDefinition::Meta>, Literal)
 // }
 
-// #[derive(Debug)]
-// pub enum ModelDefinition {
-//     Dic(Name, Vec<DicItemDefinition>, Vec<ModelParamDefinition>),
-//     Tuple(Name, Vec<TupleItemDefinition>, Vec<ModelParamDefinition>),
-//     Enum(Name, Vec<EnumItemDefinition>, Vec<ModelParamDefinition>),
-//     Scalar(Name::Common)
-// }
+#[derive(Debug, PartialEq)]
+pub enum ModelDefinition<'a> {
+    Record(Id<'a>, Vec<ModelItemDefinition<'a>>, Vec<ModelParamDefinition>),
+    Tuple(Id<'a>, Vec<TupleItemDefinition<'a>>, Vec<ModelParamDefinition>),
+    Enum(Id<'a>, Vec<EnumItemDefinition<'a>>, Vec<ModelParamDefinition>),
+    Scalar(Id<'a>)
+}
+
+impl<'a> ModelDefinition<'a> {
+    pub fn new_record(id: Id<'a>, items: Vec<ModelItemDefinition<'a>>) -> Self {
+        Self::Record(id, items, vec![])
+    }
+
+    pub fn new_scalar(id: Id<'a>) -> Self {
+        Self::Scalar(id)
+    }
+}
 

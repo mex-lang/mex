@@ -20,9 +20,7 @@ pub Package: ast::RefScope<'input> = {
 }
 
 pub PackageItems: Vec<ast::RefScope<'input>> = {
-    <p: PackageNessted> => {
-        vec![p]
-    },
+    <p: PackageNessted> => vec![p],
     <mut items: PackageItems> <p: PackageNessted> => {
         items.push(p);
         items
@@ -42,7 +40,35 @@ pub PackageRoot: ast::RefScope<'input> = {
 }
 
 pub Model: ast::RefScope<'input> = {
-    "model" <name: Name> "{" "}" => ast::Scope::new_model(name)
+    "model" <name: Name> "{" "}" => ast::Scope::new_model(name, vec![]),
+    "model" <name: Name> "{" <items: ModelItems> "}" => ast::Scope::new_model(name, items),
+}
+
+pub ModelItems: Vec<ast::ModelItemDefinition<'input>> = {
+    <i: ModelNested> => vec![i],
+    <mut items: ModelItems> <i: ModelNested> => {
+        items.push(i);
+        items
+    }
+}
+
+pub ModelNested: ast::ModelItemDefinition<'input> = {
+    <f: ModelField> => f,
+    <f: ModelField> "," => f,
+    <s: ModelSpred> => s,
+    <s: ModelSpred> "," => s,
+}
+
+pub ModelField: ast::ModelItemDefinition<'input> = {
+    <f: Name> ":" <t: Name> => {
+        ast::ModelItemDefinition::new_item(f, t)
+    }
+}
+
+pub ModelSpred: ast::ModelItemDefinition<'input> = {
+    "..." <t: Name> => {
+        ast::ModelItemDefinition::new_spread(t)
+    }
 }
 
 pub Scalar: ast::RefScope<'input> = {
@@ -78,6 +104,7 @@ extern {
     "=" => Token::Assign,
     ";" => Token::Semicolon,
     ":" => Token::Colon,
+    "," => Token::Comma,
     "..." => Token::Spread,
 
     "error" => Token::Error(<LexicalError>),

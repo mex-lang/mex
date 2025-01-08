@@ -1,6 +1,12 @@
 package Common;
 
-model Name {}
+model Name {
+
+    f1: Test,
+    f2: Test,
+    ... Name
+
+}
 
 package Test {
     model Name {}

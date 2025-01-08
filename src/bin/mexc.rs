@@ -1,6 +1,6 @@
 use mex_lang::ast::{Scope, Source};
 use mex_lang::Compiler;
-use mex_lang::transform::{ConsoleRenderer};
+use mex_lang::transform::{ConsoleRender, MexFileTransformer};
 
 fn main() {
     let global = &Scope::Global(vec![]).into();
@@ -10,6 +10,7 @@ fn main() {
 
     println!("global: {:?}", global);
 
-    let render = ConsoleRenderer::new(4);
-    render.apply(&ast);
+    let render = ConsoleRender::new(4);
+    let transformer = MexFileTransformer::new(&render);
+    transformer.apply(&ast);
 }

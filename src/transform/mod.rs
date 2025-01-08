@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use lalrpop_util::ErrorRecovery;
-use crate::ast::{ModelItemDefinition, EnumItemDefinition, Id, ItemType, ModelDefinition, RefScope, Scope, TupleItemDefinition};
+use crate::ast::*;
 use crate::lexer::{LexicalError, Token};
 
 pub trait Target {
@@ -15,7 +15,7 @@ pub trait Transformer<'a> {
     fn visit_global(&'a self, items: &'a Vec<RefScope>, level: isize);
     fn visit_package(&'a self, id: &'a Id, items: &'a Vec<RefScope>, level: isize);
     fn visit_model(&'a self, def: &'a ModelDefinition, level: isize);
-    fn visit_model_item(&'a self, item: &'a ModelItemDefinition, level: isize);
+    fn visit_model_item(&'a self, item: &'a RecordItem, level: isize);
     fn visit_scalar(&'a self, id: &'a Id, level: isize);
     fn visit_error(&'a self, error: &ErrorRecovery<usize, Token, LexicalError>, level: isize);
 }
@@ -161,13 +161,13 @@ impl<'a, R: Target> Transformer<'a> for MexFileTransformer<'a, R> {
                 for item in items {
 
                     match item {
-                        EnumItemDefinition::Item(ref id) => {
+                        EnumItem::Item(ref id) => {
                             self.render_text(format!("{:},", self.visit_id(id)), level + 1);
                         },
-                        EnumItemDefinition::Record(ref id, ref type_id) => {
+                        EnumItem::Record(ref id, ref type_id) => {
                             self.render_text(format!("{:}({{{:}}}),", self.visit_id(id), self.visit_item_type(type_id)), level + 1);
                         },
-                        EnumItemDefinition::Tuple(ref id, ref type_id) => {
+                        EnumItem::Tuple(ref id, ref type_id) => {
                             self.render_text(format!("{:}({:}),", self.visit_id(id), self.visit_item_type(type_id)), level + 1);
                         }
                     }
@@ -179,8 +179,8 @@ impl<'a, R: Target> Transformer<'a> for MexFileTransformer<'a, R> {
                 self.render_line();
 
                 let items = items.iter().map(|item| match item {
-                    TupleItemDefinition::Item(ref type_id) => self.visit_item_type(type_id).into_owned(),
-                    TupleItemDefinition::NamedItem(ref id, ref type_id) => format!("{:}: {:}", self.visit_id(id), self.visit_item_type(type_id)),
+                    TupleItem::Item(ref type_id) => self.visit_item_type(type_id).into_owned(),
+                    TupleItem::NamedItem(ref id, ref type_id) => format!("{:}: {:}", self.visit_id(id), self.visit_item_type(type_id)),
                 }).collect::<Vec<_>>().join(", ");
 
                 self.render_text(format!("model {:}({:})", self.visit_id(id), items), level);
@@ -188,13 +188,13 @@ impl<'a, R: Target> Transformer<'a> for MexFileTransformer<'a, R> {
         }
     }
 
-    fn visit_model_item(&self, item: &ModelItemDefinition, level: isize) {
+    fn visit_model_item(&self, item: &RecordItem, level: isize) {
         match item {
-            ModelItemDefinition::Item(ref id, ref type_id) => {
+            RecordItem::Item(ref id, ref type_id) => {
                 let text = format!("{:}: {:},", self.visit_id(id), self.visit_item_type(type_id));
                 self.render_text(text.into(), level);
             }
-            ModelItemDefinition::Spread(ref type_id) => {
+            RecordItem::Spread(ref type_id) => {
                 let text = format!("... {:},", self.visit_item_type(type_id));
                 self.render_text(text.into(), level);
             }

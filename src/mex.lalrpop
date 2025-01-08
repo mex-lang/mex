@@ -47,7 +47,7 @@ pub Model: ast::RefScope<'input> = {
     "model" <name: Name> "(" <items: TupleItems> ")" => ast::Scope::new_tuple(name, items),
 }
 
-pub TupleItems: Vec<ast::TupleItemDefinition<'input>> = {
+pub TupleItems: Vec<ast::TupleItem<'input>> = {
     <i: TupleItem> => vec![i],
     <mut items: TupleItems>"," <i: TupleItem> => {
         items.push(i);
@@ -55,16 +55,16 @@ pub TupleItems: Vec<ast::TupleItemDefinition<'input>> = {
     }
 }
 
-pub TupleItem: ast::TupleItemDefinition<'input> = {
+pub TupleItem: ast::TupleItem<'input> = {
     <t: Name> => {
-        ast::TupleItemDefinition::new_item(t)
+        ast::TupleItem::new_item(t)
     },
     <n: Name> ":" <t: Name> => {
-        ast::TupleItemDefinition::new_named_item(n, t)
+        ast::TupleItem::new_named_item(n, t)
     }
 }
 
-pub ModelItems: Vec<ast::ModelItemDefinition<'input>> = {
+pub ModelItems: Vec<ast::RecordItem<'input>> = {
     <i: ModelNested> => vec![i],
     <mut items: ModelItems> <i: ModelNested> => {
         items.push(i);
@@ -72,20 +72,20 @@ pub ModelItems: Vec<ast::ModelItemDefinition<'input>> = {
     }
 }
 
-pub ModelNested: ast::ModelItemDefinition<'input> = {
+pub ModelNested: ast::RecordItem<'input> = {
     <f: ModelField> ","? => f,
     <s: ModelSpred> ","? => s,
 }
 
-pub ModelField: ast::ModelItemDefinition<'input> = {
+pub ModelField: ast::RecordItem<'input> = {
     <f: Name> ":" <t: Name> => {
-        ast::ModelItemDefinition::new_item(f, t)
+        ast::RecordItem::new_item(f, t)
     }
 }
 
-pub ModelSpred: ast::ModelItemDefinition<'input> = {
+pub ModelSpred: ast::RecordItem<'input> = {
     "..." <t: Name> => {
-        ast::ModelItemDefinition::new_spread(t)
+        ast::RecordItem::new_spread(t)
     }
 }
 
@@ -98,7 +98,7 @@ pub Enum: ast::RefScope<'input> = {
     "enum" <name: Name> "{" <items: EnunItems> "}" => ast::Scope::new_enum(name, items)
 }
 
-pub EnunItems: Vec<ast::EnumItemDefinition<'input>> = {
+pub EnunItems: Vec<ast::EnumItem<'input>> = {
     <i: EnumNested> => vec![i],
     <mut items: EnunItems> <i: EnumNested> => {
         items.push(i);
@@ -106,22 +106,22 @@ pub EnunItems: Vec<ast::EnumItemDefinition<'input>> = {
     }
 }
 
-pub EnumNested: ast::EnumItemDefinition<'input> = {
+pub EnumNested: ast::EnumItem<'input> = {
     <i: EnunItem> ","? => i,
     <i: EnumTuple> ","? => i,
     <i: EnumRecord> ","? => i,
 }
 
-pub EnunItem: ast::EnumItemDefinition<'input> = {
-    <name: Name> => ast::EnumItemDefinition::new_item(name)
+pub EnunItem: ast::EnumItem<'input> = {
+    <name: Name> => ast::EnumItem::new_item(name)
 }
 
-pub EnumRecord: ast::EnumItemDefinition<'input> = {
-    <name: Name> "(" "{" <t: ItemType> "}" ")" => ast::EnumItemDefinition::new_record(name, t)
+pub EnumRecord: ast::EnumItem<'input> = {
+    <name: Name> "(" "{" <t: ItemType> "}" ")" => ast::EnumItem::new_record(name, t)
 }
 
-pub EnumTuple: ast::EnumItemDefinition<'input> = {
-    <name: Name> "(" <t: ItemType> ")" => ast::EnumItemDefinition::new_tuple(name, t)
+pub EnumTuple: ast::EnumItem<'input> = {
+    <name: Name> "(" <t: ItemType> ")" => ast::EnumItem::new_tuple(name, t)
 }
 
 pub Scalar: ast::RefScope<'input> = {

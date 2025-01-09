@@ -94,7 +94,7 @@ pub Fragment: ast::ModelDefinition<'input> = {
 }
 
 pub Enum: ast::ModelDefinition<'input> = {
-    <name: Name> "{" <items: EnunItems> "}" => ast::ModelDefinition::new_enum(name.into(), items)
+    <name: Name?> "{" <items: EnunItems> "}" => ast::ModelDefinition::new_enum(name.into(), items)
 }
 
 pub EnunItems: Vec<ast::EnumItem<'input>> = {

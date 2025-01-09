@@ -20,6 +20,9 @@ name = "mexc"
 [build-dependencies]
 lalrpop = "0.22.0"
 
+[dev-dependencies]
+test-case = "3.3.1"
+
 [dependencies]
 lalrpop-util = { version = "0.22.0", features = ["lexer", "unicode"] }
 logos = { version = "0.15.0", features = ["forbid_unsafe"] }

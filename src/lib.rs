@@ -40,61 +40,38 @@ pub type Result<'a, T> = core::result::Result<T, Error<'a>>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ast::Scope::{Global, Package};
+    use test_case::test_case;
+    use crate::ast::Scope;
+    use crate::transform::{MexLangTransformer, StringRender};
 
-    #[test]
-    fn one_root_package() {
-        let global = &Global(vec![]).into();
-        let source = Source::from_str("package main;");
-        let compiler = Compiler::new(&source, global).unwrap();
+    #[test_case("package name;"; "root package")]
+    #[test_case("package name {\n}"; "empty package")]
+    #[test_case("package name {\n}\n\npackage name {\n}"; "double package")]
+    #[test_case("model Point()"; "empty tuple model")]
+    #[test_case("package name;\n\nmodel Point()"; "model in package")]
+    #[test_case("scalar s1;\nscalar s1;"; "double scalar")]
+
+    #[test_case("model Test(Int, Int)"; "named tuple")]
+    #[test_case("model (Int, Int)"; "inline tuple")]
+    #[test_case("model (x: Int, y: Int)"; "inline tuple with names")]
+
+    #[test_case("model Test {\n    x: Int\n    y: Int\n    ... Test\n}"; "named record")]
+    #[test_case("model {\n    ... Test\n    x: Int\n}"; "inline record")]
+
+    #[test_case("enum Test {\n    Int\n}"; "named enum")]
+    #[test_case("enum {\n    Int\n}"; "inline enum")]
+
+    fn check(code: &str) {
+        let global = Scope::Global(vec![]).into();
+        let source = Source::from_str(code);
+        let compiler = Compiler::new(&source, &global).unwrap();
         let ast = compiler.make_ast().unwrap();
 
-        let expected:RefScope = Package("main".into(), vec![]).into();
+        let render = StringRender::new();
+        let transformer = MexLangTransformer::new(&render);
+        transformer.apply(&ast);
+        let result = render.as_string(4);
 
-        assert_eq!(ast, expected);
-    }
-
-    #[test]
-    fn one_nested_package() {
-        let global = &Global(vec![]).into();
-        let source = Source::from_str("package main {}");
-        let compiler = Compiler::new(&source, global).unwrap();
-        let ast = compiler.make_ast().unwrap();
-
-        let expected:RefScope = Global(vec![
-            Package("main".into(), vec![]).into(),
-        ]).into();
-
-        assert_eq!(ast, expected);
-    }
-
-    #[test]
-    fn root_and_nested_package() {
-        let global = &Global(vec![]).into();
-        let source = Source::from_str("package main; \n package a {} \n package b {}");
-        let compiler = Compiler::new(&source, global).unwrap();
-        let ast = compiler.make_ast().unwrap();
-
-        let expected:RefScope = Package("main".into(), vec![
-            Package("a".into(), vec![]).into(),
-            Package("b".into(), vec![]).into(),
-        ]).into();
-
-        assert_eq!(ast, expected);
-    }
-
-    #[test]
-    fn nested_package() {
-        let global = &Global(vec![]).into();
-        let source = Source::from_str("package a {} \n package b {}");
-        let compiler = Compiler::new(&source, global).unwrap();
-        let ast = compiler.make_ast().unwrap();
-
-        let expected:RefScope = Global(vec![
-            Package("a".into(), vec![]).into(),
-            Package("b".into(), vec![]).into(),
-        ]).into();
-
-        assert_eq!(ast, expected);
+        assert_eq!(&result, code)
     }
 }

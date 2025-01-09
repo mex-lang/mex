@@ -1,16 +1,27 @@
 package Common;
 
-model Point(Int, Int)
+model Point(Int, (Int, Int))
 model Point(x: Int, y: Int)
+model Point()
 
 fragment AuditTrail {
     created: User,
     updated: User
 }
 
+fragment T {}
+
 model Name {
-    f1: Test,
-    f2: Test,
+    f1: Test(Int, Int),
+    f2: enum Test {
+        A,
+        B(int),
+        C({x: Int})
+    },
+    f3: {
+        x: Int,
+        y: Int
+    }
     ... AuditTrail
 }
 
@@ -18,7 +29,7 @@ enum CommonStatus {
     Draft,
     Published(DateTime),
     Archived(DateTime),
-    Test({ Test })
+    Test({ x: Test })
 }
 
 package Test {

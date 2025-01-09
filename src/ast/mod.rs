@@ -21,13 +21,22 @@ pub enum Branch<'input> {
 pub enum Id<'input> {
     Name(&'input str),
     Index(i32),
-    Anonymous,
-    Branch(&'input str, Branch<'input>)
+    Branch(&'input str, Branch<'input>),
+    Inline,
 }
 
 impl<'input> From<&'input str> for Id<'input> {
     fn from(value: &'input str) -> Self {
         Id::Name(value)
+    }
+}
+
+impl<'input> From<Option<&'input str>> for Id<'input> {
+    fn from(value: Option<&'input str>) -> Self {
+        match value {
+            Some(value) => Id::Name(value),
+            None => Id::Inline,
+        }
     }
 }
 

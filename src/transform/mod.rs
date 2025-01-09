@@ -77,7 +77,16 @@ impl<'a, R: Target> Transformer<'a> for MexFileTransformer<'a, R> {
 
     fn visit_item_type(&'a self, item_type: &'a ItemType<'a>) -> Cow<'a, str> {
         match item_type {
-            ItemType::Model(ref id) => self.visit_id(id)
+            ItemType::Name(ref id) => self.visit_id(id),
+            ItemType::Inline(ref model) => {
+                match model {
+                    ModelDefinition::Fragment(_, _, _) => unreachable!(),
+                    ModelDefinition::Record(ref id, _, _) => self.visit_id(id),
+                    ModelDefinition::Tuple(ref id, _, _) => self.visit_id(id),
+                    ModelDefinition::Enum(ref id, _, _) => self.visit_id(id),
+                    ModelDefinition::Scalar(_) => unreachable!(),
+                }
+            },
         }
     }
 

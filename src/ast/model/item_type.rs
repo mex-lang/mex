@@ -1,16 +1,20 @@
-use crate::ast::Id;
+use crate::ast::{Id, ModelDefinition};
 
 #[derive(Debug, PartialEq)]
 pub enum ItemType<'a> {
     Name(Id<'a>),
-    //Inline(ModelDefinition<'a>),
+    Inline(ModelDefinition<'a>),
     //Model(Box<Scope::Model>, Vec<ModelParam>),
     //Generic(Box<Scope::Model>, Box<ModelParamDefinition::Generic>)
 }
 
 impl<'a> ItemType<'a> {
-    pub fn from_name(name: &'a str) -> Self {
+    pub fn new_name(name: &'a str) -> Self {
         ItemType::Name(name.into())
+    }
+
+    pub fn new_inline(inline: ModelDefinition<'a>) -> Self {
+        ItemType::Inline(inline)
     }
 }
 

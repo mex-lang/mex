@@ -17,28 +17,7 @@ impl<'input> Scope<'input> {
         Scope::Package(Id::Name(name), items).into()
     }
 
-    pub fn new_record(name: &'input str, items: Vec<RecordItem<'input>>) -> RefScope<'input> {
-        let def = ModelDefinition::new_record(name.into(), items);
-        Scope::Model(def).into()
-    }
-
-    pub fn new_tuple(name: &'input str, items: Vec<TupleItem<'input>>) -> RefScope<'input> {
-        let def = ModelDefinition::new_tuple(name.into(), items);
-        Scope::Model(def).into()
-    }
-
-    pub fn new_enum(name: &'input str, items: Vec<EnumItem<'input>>) -> RefScope<'input> {
-        let def = ModelDefinition::new_enum(name.into(), items);
-        Scope::Model(def).into()
-    }
-
-    pub fn new_fragment(name: &'input str, items: Vec<RecordItem<'input>>) -> RefScope<'input> {
-        let def = ModelDefinition::new_fragment(name.into(), items);
-        Scope::Model(def).into()
-    }
-
-    pub fn new_scalar(name: &'input str) -> RefScope<'input> {
-        let def = ModelDefinition::new_scalar(name.into());
+    pub fn new_model(def: ModelDefinition<'input>) -> RefScope<'input> {
         Scope::Model(def).into()
     }
 

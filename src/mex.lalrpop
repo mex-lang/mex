@@ -30,10 +30,10 @@ pub PackageItems: Vec<ast::RefScope<'input>> = {
 pub PackageNessted: ast::RefScope<'input> = {
      "package" <name: Name> "{" "}" => ast::Scope::new_package(name, vec![]),
      "package" <name: Name> "{" <items: PackageItems> "}" => ast::Scope::new_package(name, items),
-     <m: Model> => m,
-     <i: Enum> => i,
-     <f: Fragment> => f,
-     <s: Scalar> => s,
+     "fragment" <f: Fragment> => ast::Scope::new_model(f),
+     "model" <m: Model> => ast::Scope::new_model(m),
+     "enum" <i: Enum> => ast::Scope::new_model(i),
+     "scalar" <s: Scalar> => ast::Scope::new_model(s),
      ! => ast::Scope::Error(<>).into()
 }
 
@@ -41,10 +41,10 @@ pub PackageRoot: ast::RefScope<'input> = {
      "package" <name: Name> ";" => ast::Scope::new_package(name, vec![])
 }
 
-pub Model: ast::RefScope<'input> = {
-    "model" <name: Name> "{" "}" => ast::Scope::new_record(name, vec![]),
-    "model" <name: Name> "{" <items: ModelItems> "}" => ast::Scope::new_record(name, items),
-    "model" <name: Name> "(" <items: TupleItems> ")" => ast::Scope::new_tuple(name, items),
+pub Model: ast::ModelDefinition<'input> = {
+    <name: Name> "{" "}" =>  ast::ModelDefinition::new_record(name.into(), vec![]),
+    <name: Name?> "{" <items: RecordItems> "}" => ast::ModelDefinition::new_record(name.into(), items),
+    <name: Name?> "(" <items: TupleItems?> ")" => ast::ModelDefinition::new_tuple(name.into(), items.unwrap_or(vec![])),
 }
 
 pub TupleItems: Vec<ast::TupleItem<'input>> = {
@@ -57,45 +57,44 @@ pub TupleItems: Vec<ast::TupleItem<'input>> = {
 
 pub TupleItem: ast::TupleItem<'input> = {
     <t: Name> => {
-        ast::TupleItem::new_item(t)
+        ast::TupleItem::new_item(ast::ItemType::Name(t.into()))
     },
-    <n: Name> ":" <t: Name> => {
+    <n: Name> ":" <t: ItemType> => {
         ast::TupleItem::new_named_item(n, t)
     }
 }
 
-pub ModelItems: Vec<ast::RecordItem<'input>> = {
-    <i: ModelNested> => vec![i],
-    <mut items: ModelItems> <i: ModelNested> => {
+pub RecordItems: Vec<ast::RecordItem<'input>> = {
+    <i: RecordNested> => vec![i],
+    <mut items: RecordItems> <i: RecordNested> => {
         items.push(i);
         items
     }
 }
 
-pub ModelNested: ast::RecordItem<'input> = {
-    <f: ModelField> ","? => f,
-    <s: ModelSpred> ","? => s,
+pub RecordNested: ast::RecordItem<'input> = {
+    <f: RecordField> ","? => f,
+    <s: RecordSpred> ","? => s,
 }
 
-pub ModelField: ast::RecordItem<'input> = {
-    <f: Name> ":" <t: Name> => {
+pub RecordField: ast::RecordItem<'input> = {
+    <f: Name> ":" <t: ItemType> => {
         ast::RecordItem::new_item(f, t)
     }
 }
 
-pub ModelSpred: ast::RecordItem<'input> = {
-    "..." <t: Name> => {
+pub RecordSpred: ast::RecordItem<'input> = {
+    "..." <t: ItemType> => {
         ast::RecordItem::new_spread(t)
     }
 }
 
-pub Fragment: ast::RefScope<'input> = {
-    "fragment" <name: Name> "{" "}" => ast::Scope::new_fragment(name, vec![]),
-    "fragment" <name: Name> "{" <items: ModelItems> "}" => ast::Scope::new_fragment(name, items),
+pub Fragment: ast::ModelDefinition<'input> = {
+    <name: Name> "{" <items: RecordItems?> "}" => ast::ModelDefinition::new_fragment(name.into(), items.unwrap_or(vec![])),
 }
 
-pub Enum: ast::RefScope<'input> = {
-    "enum" <name: Name> "{" <items: EnunItems> "}" => ast::Scope::new_enum(name, items)
+pub Enum: ast::ModelDefinition<'input> = {
+    <name: Name> "{" <items: EnunItems> "}" => ast::ModelDefinition::new_enum(name.into(), items)
 }
 
 pub EnunItems: Vec<ast::EnumItem<'input>> = {
@@ -117,15 +116,15 @@ pub EnunItem: ast::EnumItem<'input> = {
 }
 
 pub EnumRecord: ast::EnumItem<'input> = {
-    <name: Name> "(" "{" <t: ItemType> "}" ")" => ast::EnumItem::new_record(name, t)
+    <name: Name> "(" "{" <items: RecordItems> "}" ")" => ast::EnumItem::new_record(name.into(), items),
 }
 
 pub EnumTuple: ast::EnumItem<'input> = {
-    <name: Name> "(" <t: ItemType> ")" => ast::EnumItem::new_tuple(name, t)
+    <name: Name> "(" <items: TupleItems?> ")" => ast::EnumItem::new_tuple(name.into(), items.unwrap_or(vec![])),
 }
 
-pub Scalar: ast::RefScope<'input> = {
-    "scalar" <name: Name> ";" => ast::Scope::new_scalar(name)
+pub Scalar: ast::ModelDefinition<'input> = {
+    <name: Name> ";" => ast::ModelDefinition::new_scalar(name.into())
 }
 
 pub Name: &'input str = {
@@ -133,7 +132,9 @@ pub Name: &'input str = {
 }
 
 pub ItemType: ast::ItemType<'input> = {
-    <name: "id"> => ast::ItemType::from_name(name)
+    <name: Name> => ast::ItemType::new_name(name),
+    <m: Model> => ast::ItemType::new_inline(m),
+    "enum" <i: Enum> => ast::ItemType::new_inline(i),
 }
 
 extern {

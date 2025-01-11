@@ -5,6 +5,7 @@ pub enum EnumItem<'a> {
     Item(Id<'a>),
     Record(Id<'a>, ItemType<'a>),
     Tuple(Id<'a>, ItemType<'a>),
+    Enum(Id<'a>, ItemType<'a>),
 }
 
 impl<'a> EnumItem<'a> {
@@ -20,5 +21,10 @@ impl<'a> EnumItem<'a> {
     pub fn new_tuple(id: &'a str, items: Vec<TupleItem<'a>>) -> Self {
         let def = ModelDefinition::new_tuple(Id::Inline, items);
         Self::Tuple(id.into(), ItemType::new_inline(def))
+    }
+
+    pub fn new_enum(id: &'a str, items: Vec<EnumItem<'a>>) -> Self {
+        let def = ModelDefinition::new_enum(Id::Inline, items);
+        Self::Enum(id.into(), ItemType::new_inline(def))
     }
 }

@@ -1,4 +1,4 @@
-use crate::ast::{Id, ModelDefinition};
+use crate::ast::{Id, ModelDefinition, TupleItem};
 
 #[derive(Debug, PartialEq)]
 pub enum ItemType<'a> {
@@ -15,6 +15,12 @@ impl<'a> ItemType<'a> {
 
     pub fn new_inline(inline: ModelDefinition<'a>) -> Self {
         ItemType::Inline(inline)
+    }
+
+    pub fn new_inline_tuple(items: Vec<TupleItem<'a>>) -> Self {
+        ItemType::Inline(
+            ModelDefinition::new_tuple(Id::Inline, items)
+        )
     }
 }
 

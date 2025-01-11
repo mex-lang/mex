@@ -1,7 +1,7 @@
 package Common;
 
 model Point(Int, (Int, Int))
-model Point(x: Int, y: Int)
+model Point(x: Int, y: (Int, Int))
 model Point()
 
 fragment AuditTrail {
@@ -11,14 +11,31 @@ fragment AuditTrail {
 
 fragment T {}
 
+enum Status {
+    Sub enum {
+        Test
+    }
+}
+
 model Name {
+    f1: (Int, Int),
     f1: Test(Int, Int),
+    f2: enum {
+        A,
+        B
+    }
     f2: enum Test {
         A,
         B(int),
-        C({x: Int})
+        C {
+            x: Int
+        }
     },
     f3: {
+        x: Int,
+        y: Int
+    },
+    f3: Test {
         x: Int,
         y: Int
     }
@@ -29,7 +46,9 @@ enum CommonStatus {
     Draft,
     Published(DateTime),
     Archived(DateTime),
-    Test({ x: Test })
+    Test {
+        x: Test
+    }
 }
 
 package Test {

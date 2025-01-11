@@ -56,10 +56,10 @@ pub TupleItems: Vec<ast::TupleItem<'input>> = {
 }
 
 pub TupleItem: ast::TupleItem<'input> = {
-    <t: Name> => {
-        ast::TupleItem::new_item(ast::ItemType::Name(t.into()))
+    <t: TupleType> => {
+        ast::TupleItem::new_item(t)
     },
-    <n: Name> ":" <t: ItemType> => {
+    <n: Name> ":" <t: TupleType> => {
         ast::TupleItem::new_named_item(n, t)
     }
 }
@@ -109,6 +109,7 @@ pub EnumNested: ast::EnumItem<'input> = {
     <i: EnunItem> ","? => i,
     <i: EnumTuple> ","? => i,
     <i: EnumRecord> ","? => i,
+    <i: EnumEnum> ","? => i,
 }
 
 pub EnunItem: ast::EnumItem<'input> = {
@@ -116,11 +117,15 @@ pub EnunItem: ast::EnumItem<'input> = {
 }
 
 pub EnumRecord: ast::EnumItem<'input> = {
-    <name: Name> "(" "{" <items: RecordItems> "}" ")" => ast::EnumItem::new_record(name.into(), items),
+    <name: Name> "{" <items: RecordItems> "}" => ast::EnumItem::new_record(name.into(), items),
 }
 
 pub EnumTuple: ast::EnumItem<'input> = {
     <name: Name> "(" <items: TupleItems?> ")" => ast::EnumItem::new_tuple(name.into(), items.unwrap_or(vec![])),
+}
+
+pub EnumEnum: ast::EnumItem<'input> = {
+    <name: Name> "enum" "{" <items: EnunItems> "}" => ast::EnumItem::new_enum(name.into(), items),
 }
 
 pub Scalar: ast::ModelDefinition<'input> = {
@@ -135,6 +140,11 @@ pub ItemType: ast::ItemType<'input> = {
     <name: Name> => ast::ItemType::new_name(name),
     <m: Model> => ast::ItemType::new_inline(m),
     "enum" <i: Enum> => ast::ItemType::new_inline(i),
+}
+
+pub TupleType: ast::ItemType<'input> = {
+    <name: Name> => ast::ItemType::new_name(name),
+    "(" <items: TupleItems?> ")" => ast::ItemType::new_inline_tuple(items.unwrap_or(vec![])),
 }
 
 extern {

@@ -12,13 +12,13 @@ pub trait Target {
 
 pub trait Transformer<'a> {
     fn visit_id(&'a self, id: &'a Id) -> Cow<'a, str>;
-    fn visit_id_and_start_record(&'a self, id: &'a Id) -> Cow<'a, str>;
-    fn visit_item_type(&'a self, item_type: &'a ItemType<'a>) -> Cow<'a, str>;
+    fn visit_item_type(&'a self, item_type: &'a ItemType<'a>, level: isize) -> Cow<'a, str>;
     fn visit_scope(&'a self, item: &'a RefScope, level: isize);
     fn visit_global(&'a self, items: &'a Vec<RefScope>, level: isize);
     fn visit_package(&'a self, id: &'a Id, items: &'a Vec<RefScope>, level: isize);
     fn visit_model(&'a self, def: &'a ModelDefinition, level: isize);
-    fn visit_model_item(&'a self, item: &'a RecordItem, level: isize);
+    fn visit_model_item(&'a self, item: &'a RecordItem, level: isize) -> String;
+    fn visit_enum_item(&self, item: &EnumItem, level: isize) -> String;
     fn visit_scalar(&'a self, id: &'a Id, level: isize);
     fn visit_error(&'a self, error: &ErrorRecovery<usize, Token, LexicalError>, level: isize);
 }
@@ -103,6 +103,29 @@ impl<'a , R: Target> MexLangTransformer<'a, R> {
     fn render_text(&self, text: String, level: isize) {
         self.target.render_text(text, level);
     }
+
+    fn join_tuple_items(&'a self, items: &'a Vec<TupleItem<'a>>) -> String {
+        items.iter().map(|item| match item {
+            TupleItem::Item(ref type_id) => {
+                self.visit_item_type(type_id, 0).into_owned()
+            },
+            TupleItem::NamedItem(ref id, ref type_id) => {
+                format!("{:}: {:}", self.visit_id(id), self.visit_item_type(type_id, 0))
+            },
+        }).collect::<Vec<_>>().join(", ")
+    }
+
+    fn visit_id_and_start_record(&'a self, id: &'a Id) -> Cow<'a, str> {
+        match id {
+            Id::Name(ref str) => format!("{:} {{", str).into(),
+            Id::Inline => "{".into(),
+            _ => "???".into()
+        }
+    }
+
+    fn indent(&self, level: isize) -> String {
+        " ".repeat((level*4).try_into().unwrap_or_default())
+    }
 }
 
 impl<'a, R: Target> Transformer<'a> for MexLangTransformer<'a, R> {
@@ -116,23 +139,28 @@ impl<'a, R: Target> Transformer<'a> for MexLangTransformer<'a, R> {
         Cow::Borrowed(text)
     }
 
-    fn visit_id_and_start_record(&'a self, id: &'a Id) -> Cow<'a, str> {
-        match id {
-            Id::Name(ref str) => format!("{:} {{", str).into(),
-            Id::Inline => "{".into(),
-            _ => "???".into()
-        }
-    }
-
-    fn visit_item_type(&'a self, item_type: &'a ItemType<'a>) -> Cow<'a, str> {
+    fn visit_item_type(&'a self, item_type: &'a ItemType<'a>, level: isize) -> Cow<'a, str> {
         match item_type {
             ItemType::Name(ref id) => self.visit_id(id),
             ItemType::Inline(ref model) => {
                 match model {
                     ModelDefinition::Fragment(_, _, _) => unreachable!(),
-                    ModelDefinition::Record(ref id, _, _) => self.visit_id(id),
-                    ModelDefinition::Tuple(ref id, _, _) => self.visit_id(id),
-                    ModelDefinition::Enum(ref id, _, _) => self.visit_id(id),
+                    ModelDefinition::Record(ref id, ref items, _) => {
+                        let text = items.iter().map(|item| {
+                            format!("{:}{:}", self.indent(level+1), self.visit_model_item(item, level+1))
+                        }).collect::<Vec<_>>().join("\n");
+                        format!("{:}\n{:}\n{:}}}", self.visit_id_and_start_record(id), text, self.indent(level)).into()
+                    },
+                    ModelDefinition::Tuple(ref id, ref items, _) => {
+                        format!("{:}({})", self.visit_id(id), self.join_tuple_items(items)).into()
+                    },
+                    ModelDefinition::Enum(ref id, ref items, _) => {
+                        let text = items.iter().map(|item| {
+                            format!("{:}{:}", self.indent(level+1), self.visit_enum_item(item, level+1))
+                        }).collect::<Vec<_>>().join("\n");
+
+                        format!("enum {:}\n{:}\n{:}}}", self.visit_id_and_start_record(id), text, self.indent(level)).into()
+                    },
                     ModelDefinition::Scalar(_) => unreachable!(),
                 }
             },
@@ -197,7 +225,7 @@ impl<'a, R: Target> Transformer<'a> for MexLangTransformer<'a, R> {
                 self.render_text(format!("model {:}", self.visit_id_and_start_record(id)), level);
 
                 for item in items {
-                    self.visit_model_item(item, level + 1);
+                    self.render_text(self.visit_model_item(item, level + 1), level + 1);
                 }
 
                 self.render_text(format!("}}").into(), level);
@@ -207,7 +235,7 @@ impl<'a, R: Target> Transformer<'a> for MexLangTransformer<'a, R> {
                 self.render_text(format!("fragment {:} {{", self.visit_id(id)).into(), level);
 
                 for item in items {
-                    self.visit_model_item(item, level + 1);
+                    self.render_text(self.visit_model_item(item, level + 1), level + 1);
                 }
 
                 self.render_text(format!("}}").into(), level);
@@ -223,10 +251,13 @@ impl<'a, R: Target> Transformer<'a> for MexLangTransformer<'a, R> {
                             self.render_text(format!("{:}", self.visit_id(id)), level + 1);
                         },
                         EnumItem::Record(ref id, ref type_id) => {
-                            self.render_text(format!("{:}({{{:}}})", self.visit_id(id), self.visit_item_type(type_id)), level + 1);
+                            self.render_text(format!("{:} {:}", self.visit_id(id), self.visit_item_type(type_id, level + 1)), level + 1);
                         },
                         EnumItem::Tuple(ref id, ref type_id) => {
-                            self.render_text(format!("{:}({:})", self.visit_id(id), self.visit_item_type(type_id)), level + 1);
+                            self.render_text(format!("{:}{:}", self.visit_id(id), self.visit_item_type(type_id, level + 1)), level + 1);
+                        },
+                        EnumItem::Enum(ref id, ref type_id) => {
+                            self.render_text(format!("{:} {:}", self.visit_id(id), self.visit_item_type(type_id, level + 1)), level + 1);
                         }
                     }
                 }
@@ -235,26 +266,36 @@ impl<'a, R: Target> Transformer<'a> for MexLangTransformer<'a, R> {
             },
             ModelDefinition::Tuple(ref id, ref items, ref _params) => {
                 self.render_line();
-
-                let items = items.iter().map(|item| match item {
-                    TupleItem::Item(ref type_id) => self.visit_item_type(type_id).into_owned(),
-                    TupleItem::NamedItem(ref id, ref type_id) => format!("{:}: {:}", self.visit_id(id), self.visit_item_type(type_id)),
-                }).collect::<Vec<_>>().join(", ");
-
+                let items = self.join_tuple_items(items);
                 self.render_text(format!("model {:}({:})", self.visit_id(id), items), level);
             }
         }
     }
 
-    fn visit_model_item(&self, item: &RecordItem, level: isize) {
+    fn visit_model_item(&self, item: &RecordItem, level: isize) -> String {
         match item {
             RecordItem::Item(ref id, ref type_id) => {
-                let text = format!("{:}: {:}", self.visit_id(id), self.visit_item_type(type_id));
-                self.render_text(text.into(), level);
+                format!("{:}: {:}", self.visit_id(id), self.visit_item_type(type_id, level))
             }
             RecordItem::Spread(ref type_id) => {
-                let text = format!("... {:}", self.visit_item_type(type_id));
-                self.render_text(text.into(), level);
+                format!("... {:}", self.visit_item_type(type_id, level))
+            }
+        }
+    }
+
+    fn visit_enum_item(&self, item: &EnumItem, level: isize) -> String {
+        match item {
+            EnumItem::Item(ref id) => {
+                format!("{:}", self.visit_id(id))
+            }
+            EnumItem::Record(ref id, ref type_id) => {
+                format!("{:} {:}", self.visit_id(id), self.visit_item_type(type_id, level))
+            },
+            EnumItem::Tuple(ref id, ref type_id) => {
+                format!("{:}{:}", self.visit_id(id), self.visit_item_type(type_id, level))
+            },
+            EnumItem::Enum(ref id, ref type_id) => {
+                format!("{:}: enum {:}", self.visit_id(id), self.visit_item_type(type_id, level))
             }
         }
     }

@@ -11,6 +11,6 @@ fn main() {
     println!("global: {:?}", global);
 
     let render = ConsoleRender::new(4);
-    let transformer = MexLangTransformer::new(&render);
-    transformer.apply(&ast);
+    let transformer = MexLangTransformer::new();
+    transformer.apply(&ast, &render);
 }

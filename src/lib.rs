@@ -77,8 +77,8 @@ mod tests {
         let ast = compiler.make_ast().unwrap();
 
         let render = StringRender::new();
-        let transformer = MexLangTransformer::new(&render);
-        transformer.apply(&ast);
+        let transformer = MexLangTransformer::new();
+        transformer.apply(&ast, &render);
         let result = render.as_string(4);
 
         assert_eq!(&result, code)

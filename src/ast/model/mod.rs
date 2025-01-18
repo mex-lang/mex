@@ -7,7 +7,7 @@ pub mod item_type;
 
 #[derive(Debug, PartialEq)]
 pub enum ModelDefinition<'a> {
-    Fragment(Id<'a>, Vec<RecordItem<'a>>, Vec<EnumItem<'a>>),
+    Fragment(Id<'a>, Vec<RecordItem<'a>>, Vec<ModelParamDefinition>),
     Record(Id<'a>, Vec<RecordItem<'a>>, Vec<ModelParamDefinition>),
     Tuple(Id<'a>, Vec<TupleItem<'a>>, Vec<ModelParamDefinition>),
     Enum(Id<'a>, Vec<EnumItem<'a>>, Vec<ModelParamDefinition>),

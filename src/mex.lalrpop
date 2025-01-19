@@ -31,7 +31,6 @@ pub PackageNessted: ast::RefScope<'input> = {
      "package" <name: Name> "{" <items: PackageItems?> "}" => ast::Scope::new_package(name, items),
      "fragment" <f: Fragment> => ast::Scope::new_model(f),
      "model" <m: Model> => ast::Scope::new_model(m),
-     "enum" <i: Enum> => ast::Scope::new_model(i),
      "scalar" <s: Scalar> => ast::Scope::new_model(s),
      ! => ast::Scope::Error(<>).into()
 }
@@ -109,13 +108,19 @@ pub MetadataParam: ast::ModelParam<'input> = {
 }
 
 pub Model: ast::ModelDefinition<'input> = {
-    <name: Name?> <params: ModelParamsDef?> "{" <items: RecordItems?> "}" => ast::ModelDefinition::new_record(name.into(), items, params),
-    <name: Name?> <params: ModelParamsDef?> "(" <items: TupleItems?> ")" ";"? => ast::ModelDefinition::new_tuple(name.into(), items, params),
+    <name: Name> <params: ModelParamsDef?> "{" <items: RecordItems?> "}" => ast::ModelDefinition::new_record(name.into(), items, params),
+    <name: Name> <params: ModelParamsDef?> "(" <items: TupleItems?> ")" ";"? => ast::ModelDefinition::new_tuple(name.into(), items, params),
+    <name: Name> <params: ModelParamsDef?> "enum" "{" <items: EnunItems> "}" => ast::ModelDefinition::new_enum(name.into(), items, params),
+
+    <name: Name> <params: ModelParamsDef?> "=" <item_type: ItemType> => {
+        ast::ModelDefinition::new_alias(name.into(), params, item_type)
+    },
 }
 
 pub ModelInline: ast::ModelDefinition<'input> = {
     <name: Name?> "{" <items: RecordItems?> "}" => ast::ModelDefinition::new_record(name.into(), items, None),
     <name: Name?> "(" <items: TupleItems?> ")" ";"? => ast::ModelDefinition::new_tuple(name.into(), items, None),
+    <name: Name?> "enum" "{" <items: EnunItems> "}" => ast::ModelDefinition::new_enum(name.into(), items, None)
 }
 
 pub TupleItems: Vec<ast::TupleItem<'input>> = {
@@ -162,14 +167,6 @@ pub RecordSpred: ast::RecordItem<'input> = {
 
 pub Fragment: ast::ModelDefinition<'input> = {
     <name: Name> <params: ModelParamsDef?> "{" <items: RecordItems?> "}" => ast::ModelDefinition::new_fragment(name, items, params),
-}
-
-pub Enum: ast::ModelDefinition<'input> = {
-    <name: Name?> <params: ModelParamsDef?> "{" <items: EnunItems> "}" => ast::ModelDefinition::new_enum(name.into(), items, params)
-}
-
-pub EnumInline: ast::ModelDefinition<'input> = {
-    <name: Name?> "{" <items: EnunItems> "}" => ast::ModelDefinition::new_enum(name.into(), items, None)
 }
 
 pub EnunItems: Vec<ast::EnumItem<'input>> = {
@@ -219,7 +216,6 @@ pub Literal: ast::Literal<'input> = {
 pub ItemType: ast::ItemType<'input> = {
     <name: Name> <params: ModelParams?> => ast::ItemType::new_name(name, params),
     <m: ModelInline> => ast::ItemType::new_inline(m),
-    "enum" <i: EnumInline> => ast::ItemType::new_inline(i),
 }
 
 pub TupleType: ast::ItemType<'input> = {

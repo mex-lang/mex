@@ -53,21 +53,21 @@ mod tests {
 
     #[test_case("model Test(Int, Int)"; "named tuple")]
     #[test_case("model Point()"; "empty tuple")]
-    #[test_case("model (Int, Int)"; "inline tuple")]
-    #[test_case("model ()"; "inline empty tuple")]
-    #[test_case("model (x: Int, y: Int)"; "inline tuple with names")]
+    #[test_case("model T = (Int, Int)"; "inline tuple")]
+    #[test_case("model T = ()"; "inline empty tuple")]
+    #[test_case("model T = (x: Int, y: Int)"; "inline tuple with names")]
 
     #[test_case("model Point(Int, (Int, Int))"; "inline nested tuple")]
     #[test_case("model Point(x: Int, y: (Int, Int))"; "inline nested tuple with names")]
 
     #[test_case("model Test {\n    x: Int\n    y: Int\n    ... Test\n}"; "named record")]
-    #[test_case("model {\n    ... Test\n    x: Int\n}"; "inline record")]
+    #[test_case("model T = {\n    ... Test\n    x: Int\n}"; "inline record")]
 
-    #[test_case("enum Test {\n    Int\n}"; "named enum")]
-    #[test_case("enum {\n    Int\n}"; "inline enum")]
-    #[test_case("enum Status {\n    Test(Int)\n}"; "nested tuple enum")]
-    #[test_case("enum Status {\n    Test {\n        x: Int\n    }\n}"; "nested record enum")]
-    #[test_case("enum Status {\n    Sub enum {\n        Test\n    }\n}"; "nested inline enum")]
+    #[test_case("model Test enum {\n    Int\n}"; "named enum")]
+    #[test_case("model T = enum {\n    Int\n}"; "inline enum")]
+    #[test_case("model Status enum {\n    Test(Int)\n}"; "nested tuple enum")]
+    #[test_case("model Status enum {\n    Test {\n        x: Int\n    }\n}"; "nested record enum")]
+    #[test_case("model Status enum {\n    Sub enum {\n        Test\n    }\n}"; "nested inline enum")]
 
 
     fn check(code: &str) {

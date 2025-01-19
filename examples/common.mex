@@ -18,7 +18,7 @@ model AccessRight {
 
 model Email(String);
 
-model Password[min_len: Int = 12] {
+model Password[min_len: Int = 12] enum {
     Password(String),
     HashedPassword(value: String[len=32], salt String[len=5])
 }
@@ -33,13 +33,13 @@ model Wysiwyg(String);
 
 model Language(String);
 
-enum CommonStatus {
+model CommonStatus enum {
     Draft,
     Published(DateTime),
     Archived(DateTime)
 }
 
-scalar String;
+scalar String[len: Int];
 scalar Int;
 scalar DateTime;
 scalar Byte;

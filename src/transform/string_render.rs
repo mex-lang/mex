@@ -52,8 +52,10 @@ impl Target<TextToken> for StringRender {
             },
             TextToken::NewLine => {
                 let text = format!("{:}", self.current_string.borrow());
-                self.data.borrow_mut().push((text, *self.indent.borrow()));
-                self.current_string.borrow_mut().clear();
+                if text.len() > 0 {
+                    self.data.borrow_mut().push((text, *self.indent.borrow()));
+                    self.current_string.borrow_mut().clear();
+                }
             },
             TextToken::LineIndent => {
                 let text = format!("{:}", self.new_line_placeholder);

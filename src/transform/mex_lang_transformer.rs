@@ -48,6 +48,31 @@ impl Transformer<'_> for MexLangTransformer {
         }
     }
 
+    fn visit_item_type(&self, item_type: &ItemType) {
+        match item_type {
+            ItemType::Model(ref id, ref params) => {
+                self.visit_id(id);
+                self.visit_model_params(params);
+            },
+            ItemType::Inline(ref model) => {
+                match model {
+                    ModelDefinition::Fragment(_, _, _) => unreachable!(),
+                    ModelDefinition::Alias(_, _, _) => unreachable!(),
+                    ModelDefinition::Scalar(_) => unreachable!(),
+                    ModelDefinition::Record(ref id, ref items, params) => {
+                        self.visit_record_model(id, items, params);
+                    },
+                    ModelDefinition::Tuple(ref id, ref items, params) => {
+                        self.visit_tuple_model(id, items, params);
+                    },
+                    ModelDefinition::Enum(ref id, ref items, params) => {
+                        self.visit_enum_model(id, items, params);
+                    },
+                }
+            },
+        }
+    }
+
     fn visit_model_params(&self, params: &Vec<ModelParam>) {
 
         let mut generics: Vec<&ItemType> = vec!();
@@ -145,30 +170,6 @@ impl Transformer<'_> for MexLangTransformer {
         }
     }
 
-    fn visit_item_type(&self, item_type: &ItemType) {
-        match item_type {
-            ItemType::Model(ref id, ref params) => {
-                self.visit_id(id);
-                self.visit_model_params(params);
-            },
-            ItemType::Inline(ref model) => {
-                match model {
-                    ModelDefinition::Fragment(_, _, _) => unreachable!(),
-                    ModelDefinition::Record(ref id, ref items, params) => {
-                        self.visit_record_model(id, items, params);
-                    },
-                    ModelDefinition::Tuple(ref id, ref items, params) => {
-                        self.visit_tuple_model(id, items, params);
-                    },
-                    ModelDefinition::Enum(ref id, ref items, params) => {
-                        self.visit_enum_model(id, items, params);
-                    },
-                    ModelDefinition::Scalar(_) => unreachable!(),
-                }
-            },
-        }
-    }
-
     fn visit_scope(&self, item: &RefScope, is_root: bool) {
 
         let item = item.borrow();
@@ -226,52 +227,64 @@ impl Transformer<'_> for MexLangTransformer {
         self.render(TextToken::NewLine);
     }
 
+    fn visit_model(&self, def: &ModelDefinition) {
+
+        match def {
+            ModelDefinition::Scalar(ref id) => {
+                self.visit_scalar(id);
+            }
+            ModelDefinition::Record(ref id, ref items, ref params) => {
+                self.visit_header_model("model");
+                self.visit_record_model(id, items, params);
+            },
+            ModelDefinition::Fragment(ref id, ref items, ref params) => {
+                self.visit_header_model("fragment");
+                self.visit_record_model(id, items, params);
+            }
+            ModelDefinition::Enum(ref id, ref items, ref params) => {
+                self.visit_header_model("model");
+                self.visit_enum_model(id, items, params);
+            },
+            ModelDefinition::Tuple(ref id, ref items, ref params) => {
+                self.visit_header_model("model");
+                self.visit_tuple_model(id, items, params);
+                self.render(TextToken::NewLine);
+            },
+            ModelDefinition::Alias(ref id, ref params, ref item_type) => {
+                self.visit_header_model("model");
+                self.visit_id(id);
+                self.visit_model_params_def(params);
+                self.render(TextToken::Space);
+                self.render(TextToken::Text("= ".to_string()));
+                self.visit_item_type(item_type);
+                self.render(TextToken::NewLine);
+            }
+        }
+    }
+
     fn visit_header_model(&self, keyword: &str) {
         self.render(TextToken::LineIndent);
-
-        if keyword != "" {
-            self.render(TextToken::Text(keyword.to_string()));
-            self.render(TextToken::Space);
-        }
+        self.render(TextToken::Text(keyword.to_string()));
+        self.render(TextToken::Space);
 }
 
-fn visit_record_model(&self, id: &Id, items: &Vec<RecordItem>, params: &Vec<ModelParamDefinition>) {
+    fn visit_record_model(&self, id: &Id, items: &Vec<RecordItem>, params: &Vec<ModelParamDefinition>) {
 
-        self.visit_id(id);
-        self.visit_model_params_def(params);
-        self.render(TextToken::Space);
-        self.render(TextToken::Text("{".to_string()));
-        self.render(TextToken::NewLine);
+            self.visit_id(id);
+            self.visit_model_params_def(params);
+            self.render(TextToken::Space);
+            self.render(TextToken::Text("{".to_string()));
+            self.render(TextToken::NewLine);
 
-        self.render(TextToken::IncIndent);
-        for item in items {
-            self.visit_model_item(item);
+            self.render(TextToken::IncIndent);
+            for item in items {
+                self.visit_model_item(item);
+            }
+            self.render(TextToken::DecIndent);
+
+            self.render(TextToken::Text("}".into()));
+            self.render(TextToken::NewLine);
         }
-        self.render(TextToken::DecIndent);
-
-        self.render(TextToken::Text("}".into()));
-        self.render(TextToken::NewLine);
-    }
-
-    fn visit_enum_model(&self, id: &Id, items: &Vec<EnumItem>, params: &Vec<ModelParamDefinition>) {
-
-        self.render(TextToken::Text("enum".to_string()));
-        self.render(TextToken::Space);
-        self.visit_id(id);
-        self.visit_model_params_def(params);
-        self.render(TextToken::Space);
-        self.render(TextToken::Text("{".to_string()));
-        self.render(TextToken::NewLine);
-
-        self.render(TextToken::IncIndent);
-        for item in items {
-            self.visit_enum_item(item);
-        }
-        self.render(TextToken::DecIndent);
-
-        self.render(TextToken::Text("}".into()));
-        self.render(TextToken::NewLine);
-    }
 
     fn visit_tuple_model(&self, id: &Id, items: &Vec<TupleItem>, params: &Vec<ModelParamDefinition>) {
 
@@ -303,30 +316,24 @@ fn visit_record_model(&self, id: &Id, items: &Vec<RecordItem>, params: &Vec<Mode
         self.render(TextToken::Text(")".to_string()));
     }
 
-    fn visit_model(&self, def: &ModelDefinition) {
+    fn visit_enum_model(&self, id: &Id, items: &Vec<EnumItem>, params: &Vec<ModelParamDefinition>) {
 
-        match def {
-            ModelDefinition::Scalar(ref id) => {
-                self.visit_scalar(id);
-            }
-            ModelDefinition::Record(ref id, ref items, ref params) => {
-                self.visit_header_model("model");
-                self.visit_record_model(id, items, params);
-            },
-            ModelDefinition::Fragment(ref id, ref items, ref params) => {
-                self.visit_header_model("fragment");
-                self.visit_record_model(id, items, params);
-            }
-            ModelDefinition::Enum(ref id, ref items, ref params) => {
-                self.visit_header_model("");
-                self.visit_enum_model(id, items, params);
-            },
-            ModelDefinition::Tuple(ref id, ref items, ref params) => {
-                self.visit_header_model("model");
-                self.visit_tuple_model(id, items, params);
-                self.render(TextToken::NewLine);
-            }
+        self.visit_id(id);
+        self.visit_model_params_def(params);
+        self.render(TextToken::Space);
+        self.render(TextToken::Text("enum".to_string()));
+        self.render(TextToken::Space);
+        self.render(TextToken::Text("{".to_string()));
+        self.render(TextToken::NewLine);
+
+        self.render(TextToken::IncIndent);
+        for item in items {
+            self.visit_enum_item(item);
         }
+        self.render(TextToken::DecIndent);
+
+        self.render(TextToken::Text("}".into()));
+        self.render(TextToken::NewLine);
     }
 
     fn visit_model_item(&self, item: &RecordItem) {

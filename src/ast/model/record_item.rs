@@ -7,8 +7,8 @@ pub enum RecordItem<'a> {
 }
 
 impl<'a> RecordItem<'a> {
-    pub fn new_item(id: &'a str, item_type: ItemType<'a>) -> Self {
-        Self::Item(id.into(), item_type)
+    pub fn new_item(id: Id<'a>, item_type: ItemType<'a>) -> Self {
+        Self::Item(id, item_type)
     }
 
     pub fn new_spread(item_type: ItemType<'a>) -> Self {

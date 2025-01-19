@@ -13,8 +13,8 @@ pub enum Scope<'input> {
 }
 
 impl<'input> Scope<'input> {
-    pub fn new_package(name: &'input str, items: Vec<RefScope<'input>>) -> RefScope<'input> {
-        Scope::Package(Id::Name(name), items).into()
+    pub fn new_package(name: Id<'input>, items: Option<Vec<RefScope<'input>>>) -> RefScope<'input> {
+        Scope::Package(name, items.unwrap_or(vec!())).into()
     }
 
     pub fn new_model(def: ModelDefinition<'input>) -> RefScope<'input> {

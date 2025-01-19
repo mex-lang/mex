@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use lalrpop_util::ErrorRecovery;
-use crate::ast::{EnumItem, Id, ItemType, ModelDefinition, ModelParamDefinition, RecordItem, RefScope, Scope, TupleItem};
+use crate::ast::*;
 use crate::lexer::{LexicalError, Token};
 use crate::transform::{Target, TextToken, Transformer};
 
@@ -41,9 +41,116 @@ impl Transformer<'_> for MexLangTransformer {
         self.render(token);
     }
 
+    fn visit_literal(&self, literal: &Literal) {
+        match literal {
+            Literal::String(ref str) => self.render(TextToken::Text(str.to_string())),
+            Literal::Number(ref str) => self.render(TextToken::Text(str.to_string())),
+        }
+    }
+
+    fn visit_model_params(&self, params: &Vec<ModelParam>) {
+
+        let mut generics: Vec<&ItemType> = vec!();
+        let mut metadata: Vec<(&Id, &Literal)> = vec!();
+
+        for param in params {
+            match param {
+                ModelParam::Generic(ref item_type) => {
+                    generics.push(item_type);
+                },
+                ModelParam::Metadata(ref name, ref value) => {
+                    metadata.push((name, value));
+                },
+            }
+        }
+
+        if !generics.is_empty() {
+            self.render(TextToken::Text("<".to_string()));
+            for (i, item_type) in generics.iter().enumerate() {
+                self.visit_item_type(item_type);
+                if i < generics.len() - 1 {
+                    self.render(TextToken::Text(",".to_string()));
+                }
+            }
+            self.render(TextToken::Text(">".to_string()));
+        }
+
+        if !metadata.is_empty() {
+            self.render(TextToken::Text("[".to_string()));
+            for (i, (name, value)) in metadata.iter().enumerate() {
+                self.visit_id(name);
+                self.render(TextToken::Text("=".to_string()));
+                self.visit_literal(value);
+                if i < metadata.len() - 1 {
+                    self.render(TextToken::Text(",".to_string()));
+                }
+            }
+            self.render(TextToken::Text("]".to_string()));
+        }
+    }
+
+    fn visit_model_params_def(&self, params: &Vec<ModelParamDefinition>) {
+
+        let mut generics: Vec<(&Id, &Option<ItemType>)> = vec!();
+        let mut metadata: Vec<(&Id, &ItemType, &Option<Literal>)> = vec!();
+        let mut constraints: Vec<(&Id, &GenericConstraintDefinition)> = vec!();
+
+        for param in params {
+            match param {
+                ModelParamDefinition::Generic{id, constraint_type} => {
+                    generics.push((id, constraint_type));
+                },
+                ModelParamDefinition::Metadata{id, type_id, def_value} => {
+                    metadata.push((id, type_id, def_value));
+                },
+                ModelParamDefinition::Constraint{id, constraint} => {
+                    constraints.push((id, constraint));
+                }
+            }
+        }
+
+        if !generics.is_empty() {
+            self.render(TextToken::Text("<".to_string()));
+            for (i, (id, item_type)) in generics.iter().enumerate() {
+                self.visit_id(id);
+                if let Some(item_type) = item_type {
+                    self.render(TextToken::Text(":".to_string()));
+                    self.visit_item_type(item_type);
+                }
+
+                if i < generics.len() - 1 {
+                    self.render(TextToken::Text(",".to_string()));
+                }
+            }
+            self.render(TextToken::Text(">".to_string()));
+        }
+
+        if !metadata.is_empty() {
+            self.render(TextToken::Text("[".to_string()));
+            for (i, (id, item_type, value)) in metadata.iter().enumerate() {
+                self.visit_id(id);
+                self.render(TextToken::Text(":".to_string()));
+                self.visit_item_type(item_type);
+
+                if let Some(value) = value {
+                    self.render(TextToken::Text("=".to_string()));
+                    self.visit_literal(value);
+                }
+
+                if i < metadata.len() - 1 {
+                    self.render(TextToken::Text(",".to_string()));
+                }
+            }
+            self.render(TextToken::Text("]".to_string()));
+        }
+    }
+
     fn visit_item_type(&self, item_type: &ItemType) {
         match item_type {
-            ItemType::Name(ref id) => self.visit_id(id),
+            ItemType::Model(ref id, ref params) => {
+                self.visit_id(id);
+                self.visit_model_params(params);
+            },
             ItemType::Inline(ref model) => {
                 match model {
                     ModelDefinition::Fragment(_, _, _) => unreachable!(),
@@ -128,9 +235,10 @@ impl Transformer<'_> for MexLangTransformer {
         }
 }
 
-fn visit_record_model(&self, id: &Id, items: &Vec<RecordItem>, _params: &Vec<ModelParamDefinition>) {
+fn visit_record_model(&self, id: &Id, items: &Vec<RecordItem>, params: &Vec<ModelParamDefinition>) {
 
         self.visit_id(id);
+        self.visit_model_params_def(params);
         self.render(TextToken::Space);
         self.render(TextToken::Text("{".to_string()));
         self.render(TextToken::NewLine);
@@ -145,11 +253,12 @@ fn visit_record_model(&self, id: &Id, items: &Vec<RecordItem>, _params: &Vec<Mod
         self.render(TextToken::NewLine);
     }
 
-    fn visit_enum_model(&self, id: &Id, items: &Vec<EnumItem>, _params: &Vec<ModelParamDefinition>) {
+    fn visit_enum_model(&self, id: &Id, items: &Vec<EnumItem>, params: &Vec<ModelParamDefinition>) {
 
         self.render(TextToken::Text("enum".to_string()));
         self.render(TextToken::Space);
         self.visit_id(id);
+        self.visit_model_params_def(params);
         self.render(TextToken::Space);
         self.render(TextToken::Text("{".to_string()));
         self.render(TextToken::NewLine);
@@ -164,9 +273,10 @@ fn visit_record_model(&self, id: &Id, items: &Vec<RecordItem>, _params: &Vec<Mod
         self.render(TextToken::NewLine);
     }
 
-    fn visit_tuple_model(&self, id: &Id, items: &Vec<TupleItem>, _params: &Vec<ModelParamDefinition>) {
+    fn visit_tuple_model(&self, id: &Id, items: &Vec<TupleItem>, params: &Vec<ModelParamDefinition>) {
 
         self.visit_id(id);
+        self.visit_model_params_def(params);
         self.render(TextToken::Text("(".to_string()));
 
         let mut is_next = false;
@@ -199,21 +309,21 @@ fn visit_record_model(&self, id: &Id, items: &Vec<RecordItem>, _params: &Vec<Mod
             ModelDefinition::Scalar(ref id) => {
                 self.visit_scalar(id);
             }
-            ModelDefinition::Record(ref id, ref items, ref _params) => {
+            ModelDefinition::Record(ref id, ref items, ref params) => {
                 self.visit_header_model("model");
-                self.visit_record_model(id, items, _params);
+                self.visit_record_model(id, items, params);
             },
-            ModelDefinition::Fragment(ref id, ref items, ref _params) => {
+            ModelDefinition::Fragment(ref id, ref items, ref params) => {
                 self.visit_header_model("fragment");
-                self.visit_record_model(id, items, _params);
+                self.visit_record_model(id, items, params);
             }
-            ModelDefinition::Enum(ref id, ref items, ref _params) => {
+            ModelDefinition::Enum(ref id, ref items, ref params) => {
                 self.visit_header_model("");
-                self.visit_enum_model(id, items, _params);
+                self.visit_enum_model(id, items, params);
             },
-            ModelDefinition::Tuple(ref id, ref items, ref _params) => {
+            ModelDefinition::Tuple(ref id, ref items, ref params) => {
                 self.visit_header_model("model");
-                self.visit_tuple_model(id, items, _params);
+                self.visit_tuple_model(id, items, params);
                 self.render(TextToken::NewLine);
             }
         }

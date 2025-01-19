@@ -25,25 +25,18 @@ pub enum Id<'input> {
     Inline,
 }
 
-impl<'input> From<&'input str> for Id<'input> {
-    fn from(value: &'input str) -> Self {
-        Id::Name(value)
-    }
-}
-
-impl<'input> From<Option<&'input str>> for Id<'input> {
-    fn from(value: Option<&'input str>) -> Self {
+impl<'input> From<Option<Id<'input>>> for Id<'input> {
+    fn from(value: Option<Id<'input>>) -> Self {
         match value {
-            Some(value) => Id::Name(value),
+            Some(value) => value,
             None => Id::Inline,
         }
     }
 }
 
-// #[derive(Debug)]
-// pub enum Literal {
-//     String(String),
-//     Number(String),
-//     Integer(i64),
-// }
+#[derive(Debug, PartialEq)]
+pub enum Literal<'input> {
+    String(&'input str),
+    Number(&'input str)
+}
 

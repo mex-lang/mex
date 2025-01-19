@@ -30,7 +30,10 @@ pub trait Target<Token> {
 
 pub trait Transformer<'a> {
     fn visit_id(&'a self, id: &'a Id);
+    fn visit_literal(&self, literal: &Literal);
     fn visit_item_type(&'a self, item_type: &'a ItemType<'a>);
+    fn visit_model_params(&self, params: &Vec<ModelParam>);
+    fn visit_model_params_def(&self, params: &Vec<ModelParamDefinition>);
     fn visit_scope(&'a self, item: &'a RefScope, is_root: bool);
     fn visit_global(&'a self, items: &'a Vec<RefScope>);
     fn visit_package(&'a self, id: &'a Id, items: &'a Vec<RefScope>, is_root: bool);

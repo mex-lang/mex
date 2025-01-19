@@ -11,7 +11,7 @@ impl<'a> TupleItem<'a> {
         Self::Item(item_type)
     }
 
-    pub fn new_named_item(id: &'a str, item_type: ItemType<'a>) -> Self {
-        Self::NamedItem(id.into(), item_type)
+    pub fn new_named_item(id: Id<'a>, item_type: ItemType<'a>) -> Self {
+        Self::NamedItem(id, item_type)
     }
 }

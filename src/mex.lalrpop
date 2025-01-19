@@ -28,8 +28,7 @@ pub PackageItems: Vec<ast::RefScope<'input>> = {
 }
 
 pub PackageNessted: ast::RefScope<'input> = {
-     "package" <name: Name> "{" "}" => ast::Scope::new_package(name, vec![]),
-     "package" <name: Name> "{" <items: PackageItems> "}" => ast::Scope::new_package(name, items),
+     "package" <name: Name> "{" <items: PackageItems?> "}" => ast::Scope::new_package(name, items),
      "fragment" <f: Fragment> => ast::Scope::new_model(f),
      "model" <m: Model> => ast::Scope::new_model(m),
      "enum" <i: Enum> => ast::Scope::new_model(i),
@@ -38,13 +37,85 @@ pub PackageNessted: ast::RefScope<'input> = {
 }
 
 pub PackageRoot: ast::RefScope<'input> = {
-     "package" <name: Name> ";" => ast::Scope::new_package(name, vec![])
+     "package" <name: Name> ";"? => ast::Scope::new_package(name, None)
+}
+
+pub ModelParamsDef: Vec<ast::ModelParamDefinition<'input>> = {
+    "<" <items: GenericParamsDef> ">" => items,
+    "[" <items: MetadataParamsDef> "]" => items,
+    "<" <mut a: GenericParamsDef> ">" "[" <b: MetadataParamsDef> "]" => {
+        a.extend(b);
+        a
+    }
+}
+
+pub GenericParamsDef: Vec<ast::ModelParamDefinition<'input>> = {
+    <p: GenericParamDef> => vec!(p),
+    <mut items: GenericParamsDef> "," <p: GenericParamDef> => {
+        items.push(p);
+        items
+    },
+}
+
+pub GenericParamDef: ast::ModelParamDefinition<'input> = {
+    <name: Name> => ast::ModelParamDefinition::new_generic(name, None),
+    <name: Name> ":" <item_type: ItemType> => ast::ModelParamDefinition::new_generic(name, Some(item_type)),
+}
+
+pub MetadataParamsDef: Vec<ast::ModelParamDefinition<'input>> = {
+    <p: MetadataParamDef> => vec!(p),
+    <mut items: MetadataParamsDef> "," <p: MetadataParamDef> => {
+        items.push(p);
+        items
+    },
+}
+
+pub MetadataParamDef: ast::ModelParamDefinition<'input> = {
+    <name: Name> ":" <item_type: ItemType> => ast::ModelParamDefinition::new_metadata(name, item_type, None),
+    <name: Name> ":" <item_type: ItemType> "=" <value: Literal> => ast::ModelParamDefinition::new_metadata(name, item_type, Some(value))
+}
+
+pub ModelParams: Vec<ast::ModelParam<'input>> = {
+    "<" <items: GenericParams> ">" => items,
+    "[" <items: MetadataParams> "]" => items,
+    "<" <mut a: GenericParams> ">" "[" <b: MetadataParams> "]" => {
+        a.extend(b);
+        a
+    }
+}
+
+pub GenericParams: Vec<ast::ModelParam<'input>> = {
+    <p: GenericParam> => vec!(p),
+    <mut items: GenericParams> "," <p: GenericParam> => {
+        items.push(p);
+        items
+    },
+}
+
+pub GenericParam: ast::ModelParam<'input> = {
+    <item_type: ItemType> => ast::ModelParam::new_generic(item_type)
+}
+
+pub MetadataParams: Vec<ast::ModelParam<'input>> = {
+    <p: MetadataParam> => vec!(p),
+    <mut items: MetadataParams> "," <p: MetadataParam> => {
+        items.push(p);
+        items
+    },
+}
+
+pub MetadataParam: ast::ModelParam<'input> = {
+    <name: Name> "=" <value: Literal> => ast::ModelParam::new_metadata(name, value)
 }
 
 pub Model: ast::ModelDefinition<'input> = {
-    <name: Name> "{" "}" =>  ast::ModelDefinition::new_record(name.into(), vec![]),
-    <name: Name?> "{" <items: RecordItems> "}" => ast::ModelDefinition::new_record(name.into(), items),
-    <name: Name?> "(" <items: TupleItems?> ")" => ast::ModelDefinition::new_tuple(name.into(), items.unwrap_or(vec![])),
+    <name: Name?> <params: ModelParamsDef?> "{" <items: RecordItems?> "}" => ast::ModelDefinition::new_record(name.into(), items, params),
+    <name: Name?> <params: ModelParamsDef?> "(" <items: TupleItems?> ")" ";"? => ast::ModelDefinition::new_tuple(name.into(), items, params),
+}
+
+pub ModelInline: ast::ModelDefinition<'input> = {
+    <name: Name?> "{" <items: RecordItems?> "}" => ast::ModelDefinition::new_record(name.into(), items, None),
+    <name: Name?> "(" <items: TupleItems?> ")" ";"? => ast::ModelDefinition::new_tuple(name.into(), items, None),
 }
 
 pub TupleItems: Vec<ast::TupleItem<'input>> = {
@@ -90,11 +161,15 @@ pub RecordSpred: ast::RecordItem<'input> = {
 }
 
 pub Fragment: ast::ModelDefinition<'input> = {
-    <name: Name> "{" <items: RecordItems?> "}" => ast::ModelDefinition::new_fragment(name.into(), items.unwrap_or(vec![])),
+    <name: Name> <params: ModelParamsDef?> "{" <items: RecordItems?> "}" => ast::ModelDefinition::new_fragment(name, items, params),
 }
 
 pub Enum: ast::ModelDefinition<'input> = {
-    <name: Name?> "{" <items: EnunItems> "}" => ast::ModelDefinition::new_enum(name.into(), items)
+    <name: Name?> <params: ModelParamsDef?> "{" <items: EnunItems> "}" => ast::ModelDefinition::new_enum(name.into(), items, params)
+}
+
+pub EnumInline: ast::ModelDefinition<'input> = {
+    <name: Name?> "{" <items: EnunItems> "}" => ast::ModelDefinition::new_enum(name.into(), items, None)
 }
 
 pub EnunItems: Vec<ast::EnumItem<'input>> = {
@@ -117,33 +192,38 @@ pub EnunItem: ast::EnumItem<'input> = {
 }
 
 pub EnumRecord: ast::EnumItem<'input> = {
-    <name: Name> "{" <items: RecordItems> "}" => ast::EnumItem::new_record(name.into(), items),
+    <name: Name> "{" <items: RecordItems> "}" => ast::EnumItem::new_record(name, items),
 }
 
 pub EnumTuple: ast::EnumItem<'input> = {
-    <name: Name> "(" <items: TupleItems?> ")" => ast::EnumItem::new_tuple(name.into(), items.unwrap_or(vec![])),
+    <name: Name> "(" <items: TupleItems?> ")" => ast::EnumItem::new_tuple(name, items.unwrap_or(vec![])),
 }
 
 pub EnumEnum: ast::EnumItem<'input> = {
-    <name: Name> "enum" "{" <items: EnunItems> "}" => ast::EnumItem::new_enum(name.into(), items),
+    <name: Name> "enum" "{" <items: EnunItems> "}" => ast::EnumItem::new_enum(name, items),
 }
 
 pub Scalar: ast::ModelDefinition<'input> = {
-    <name: Name> ";" => ast::ModelDefinition::new_scalar(name.into())
+    <name: Name> ";"? => ast::ModelDefinition::new_scalar(name)
 }
 
-pub Name: &'input str = {
-    <name: "id"> => name
+pub Name: ast::Id<'input> = {
+    <name: "id"> => ast::Id::Name(name)
+}
+
+pub Literal: ast::Literal<'input> = {
+    <value: "id"> => ast::Literal::String(value),
+    <value: "number"> => ast::Literal::Number(value),
 }
 
 pub ItemType: ast::ItemType<'input> = {
-    <name: Name> => ast::ItemType::new_name(name),
-    <m: Model> => ast::ItemType::new_inline(m),
-    "enum" <i: Enum> => ast::ItemType::new_inline(i),
+    <name: Name> <params: ModelParams?> => ast::ItemType::new_name(name, params),
+    <m: ModelInline> => ast::ItemType::new_inline(m),
+    "enum" <i: EnumInline> => ast::ItemType::new_inline(i),
 }
 
 pub TupleType: ast::ItemType<'input> = {
-    <name: Name> => ast::ItemType::new_name(name),
+    <name: Name> <params: ModelParams?> => ast::ItemType::new_name(name, params),
     "(" <items: TupleItems?> ")" => ast::ItemType::new_inline_tuple(items.unwrap_or(vec![])),
 }
 
@@ -159,7 +239,7 @@ extern {
     "scalar" => Token::KeywordScalar,
 
     "id" => Token::Identifier(<&'input str>),
-    "int" => Token::Integer(<i64>),
+    "number" => Token::Number(<&'input str>),
 
     "(" => Token::LParen,
     ")" => Token::RParen,
@@ -167,6 +247,8 @@ extern {
     "}" => Token::RBracket,
     "<" => Token::Lees,
     ">" => Token::Greater,
+    "[" => Token::LSquare,
+    "]" => Token::RSquare,
 
     "?" => Token::Question,
     "=" => Token::Assign,

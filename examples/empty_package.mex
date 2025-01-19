@@ -4,9 +4,16 @@ model Point(Int, (Int, Int))
 model Point(x: Int, y: (Int, Int))
 model Point()
 
-fragment AuditTrail {
-    created: User,
-    updated: User
+model Textarea[lines: Int = 3](String);
+
+enum Password[len: Int = 12] {
+    Open(String),
+    Hashed(value: String[len=32], salt: String[len=5])
+}
+
+fragment AuditTrail<User, Instant> {
+    created: (User, Instant),
+    updated: (User, Instant)
 }
 
 fragment T {}

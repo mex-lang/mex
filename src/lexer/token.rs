@@ -19,8 +19,10 @@ pub enum Token<'input> {
 
     #[regex("[_a-zA-Z][_0-9a-zA-Z]*", |lex| lex.slice())]
     Identifier(&'input str),
-    #[regex("[1-9][0-9]*", |lex| lex.slice().parse())]
-    Integer(i64),
+    #[regex("[1-9][0-9]*", |lex| lex.slice())]
+    Number(&'input str),
+    //#[regex("[1-9][0-9]*", |lex| lex.slice().parse())]
+    //Integer(i64),
 
     #[token("(")]
     LParen,
@@ -34,6 +36,10 @@ pub enum Token<'input> {
     Lees,
     #[token(">")]
     Greater,
+    #[token("[")]
+    LSquare,
+    #[token("]")]
+    RSquare,
 
     #[token("?")]
     Question,

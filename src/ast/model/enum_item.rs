@@ -9,22 +9,22 @@ pub enum EnumItem<'a> {
 }
 
 impl<'a> EnumItem<'a> {
-    pub fn new_item(id: &'a str) -> Self {
-        Self::Item(id.into())
+    pub fn new_item(id: Id<'a>) -> Self {
+        Self::Item(id)
     }
 
-    pub fn new_record(id: &'a str, items: Vec<RecordItem<'a>>) -> Self {
-        let def = ModelDefinition::new_record(Id::Inline, items);
-        Self::Record(id.into(), ItemType::new_inline(def))
+    pub fn new_record(id: Id<'a>, items: Vec<RecordItem<'a>>) -> Self {
+        let def = ModelDefinition::new_record(Id::Inline, items.into(), vec![].into());
+        Self::Record(id, ItemType::new_inline(def))
     }
 
-    pub fn new_tuple(id: &'a str, items: Vec<TupleItem<'a>>) -> Self {
-        let def = ModelDefinition::new_tuple(Id::Inline, items);
-        Self::Tuple(id.into(), ItemType::new_inline(def))
+    pub fn new_tuple(id: Id<'a>, items: Vec<TupleItem<'a>>) -> Self {
+        let def = ModelDefinition::new_tuple(Id::Inline, items.into(), vec![].into());
+        Self::Tuple(id, ItemType::new_inline(def))
     }
 
-    pub fn new_enum(id: &'a str, items: Vec<EnumItem<'a>>) -> Self {
-        let def = ModelDefinition::new_enum(Id::Inline, items);
-        Self::Enum(id.into(), ItemType::new_inline(def))
+    pub fn new_enum(id: Id<'a>, items: Vec<EnumItem<'a>>) -> Self {
+        let def = ModelDefinition::new_enum(Id::Inline, items.into(), vec![].into());
+        Self::Enum(id, ItemType::new_inline(def))
     }
 }
